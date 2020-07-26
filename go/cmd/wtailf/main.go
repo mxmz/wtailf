@@ -5,13 +5,25 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/hpcloud/tail"
 )
 
+type fsAdapted struct {
+	Handler http.Handler
+}
+
+func (h *fsAdapted) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if strings.Index(r.URL.Path, ".") == -1 {
+		r.URL.Path = "/"
+	}
+	h.Handler.ServeHTTP(w, r)
+}
+
 func main() {
 	var file = os.Args[1]
-	fs := http.FileServer(http.Dir("./static"))
+	fs := &fsAdapted{http.FileServer(http.Dir("./dist"))}
 	http.Handle("/", fs)
 	http.HandleFunc("/events", func(w http.ResponseWriter, r *http.Request) {
 		t, _ := tail.TailFile(file, tail.Config{Follow: true})
@@ -48,6 +60,6 @@ func main() {
 
 	})
 
-	log.Print("Listening on localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Print("Listening on localhost:8081")
+	log.Fatal(http.ListenAndServe(":8081", nil))
 }
