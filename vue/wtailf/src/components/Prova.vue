@@ -1,6 +1,5 @@
 <template>
   <div class="hello">
-    <h1>{{ msg }}</h1>
     <input v-model="filter">
     <div>
       <div v-for="a in filteredList" v-bind:key="a.idx">

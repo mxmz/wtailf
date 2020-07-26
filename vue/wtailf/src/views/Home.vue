@@ -1,8 +1,7 @@
 <template>
   <div class="home">
     <hr>
-    <hr>
-    <Prova msg="Wsssssssssssselcome to Your Vue.js App"/> </div>
+    <Prova msg=""/> </div>
 </template>
 
 <script>
