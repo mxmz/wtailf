@@ -10,5 +10,25 @@
 			"path": "."
 		}
 	],
-	"settings": {}
+	"settings": {
+		"eslint.validate": [ "vue", "html", "javascript", "typescript"],
+		"eslint.workingDirectories": [ { "mode": "auto"}],
+		"files.exclude": {
+			"**/.git": true,
+			"**/.svn": true,
+			"**/.hg": true,
+			"**/CVS": true,
+			"**/.DS_Store": true,
+			"**/node_modules": true
+		},
+		"eslint.codeActionsOnSave.mode": "all",
+		"eslint.format.enable": true,
+		"eslint.alwaysShowStatus": true,
+		"editor.codeActionsOnSave": {
+			"source.fixAll.eslint": true
+		},
+		"go.languageServerFlags": [
+			"-rpc.trace"
+		  ]
+	}
 }

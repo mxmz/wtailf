@@ -2,3 +2,6 @@ go/cmd/wtail/wtail
 vue/npm-debug.log
 go/cmd/wtailf/wtail
 go/cmd/wtailf/wtailf
+go/cmd/wtailf/dist
+go/cmd/wtailf/__debug_bin
+go/.temp
