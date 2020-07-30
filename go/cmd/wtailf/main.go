@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 
-	"github.com/hpcloud/tail"
+	"github.com/papertrail/go-tail/follower"
 )
 
 type fsAdapted struct {
@@ -21,12 +22,44 @@ func (h *fsAdapted) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.Handler.ServeHTTP(w, r)
 }
 
+func test(c int) {
+
+	t, _ := follower.New("../../.temp", follower.Config{
+		Whence: io.SeekEnd,
+		Offset: 0,
+		Reopen: true,
+	})
+	var lines = t.Lines()
+	for {
+		select {
+		case line := <-lines:
+			{
+				log.Println(c)
+				log.Println(line)
+			}
+		}
+	}
+
+}
+
 func main() {
+
+	// go test(1)
+	// go test(2)
+	// go test(3)
+
+	// <-time.Tick(60 * time.Minute)
+
 	var file = os.Args[1]
 	fs := &fsAdapted{http.FileServer(http.Dir("./dist"))}
 	http.Handle("/", fs)
 	http.HandleFunc("/events", func(w http.ResponseWriter, r *http.Request) {
-		t, _ := tail.TailFile(file, tail.Config{Follow: true})
+		//t, _ := tail.TailFile(file, tail.Config{Follow: true})
+		t, _ := follower.New(file, follower.Config{
+			Whence: io.SeekEnd,
+			Offset: -1024 * 32,
+			Reopen: true,
+		})
 		// for line := range t.Lines {
 		// 	fmt.Println(line.Text)
 		// }
@@ -39,25 +72,25 @@ func main() {
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Header().Set("Connection", "keep-alive")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-
+		var lines = t.Lines()
 	LOOP:
 		for {
 			select {
-			case line := <-t.Lines:
+			case line := <-lines:
 				{
-					fmt.Fprintf(w, "event: log\ndata: %s\n\n", line.Text)
+					log.Printf("%s | %s | %v", r.RemoteAddr, line.String(), t.Err())
+					fmt.Fprintf(w, "event: log\ndata: %s\n\n", line.String())
 					flusher.Flush() // Trigger "chunked" encoding and send a chunk...
 				}
 			case <-r.Context().Done():
 				{
-					t.Stop()
-					log.Println("Aborted.")
+					log.Printf("%s | aborted", r.RemoteAddr)
 					break LOOP
 				}
 			}
 
 		}
-
+		t.Close()
 	})
 
 	log.Print("Listening on localhost:8081")
