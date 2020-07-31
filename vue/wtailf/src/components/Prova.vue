@@ -44,8 +44,8 @@ export default class Prova extends Vue {
         idx: this.idx,
         message: event.data
       })
-      if (this.list.length > 500) {
-        this.list = this.list.splice(0, 200)
+      if (this.list.length > 1200) {
+        this.list = this.list.splice(0, 1000)
       }
     })
   }
