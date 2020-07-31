@@ -54,12 +54,24 @@ func main() {
 	fs := &fsAdapted{http.FileServer(http.Dir("./dist"))}
 	http.Handle("/", fs)
 	http.HandleFunc("/events", func(w http.ResponseWriter, r *http.Request) {
-		//t, _ := tail.TailFile(file, tail.Config{Follow: true})
-		t, _ := follower.New(file, follower.Config{
+		file := file
+		info, err := os.Stat(file)
+		if err != nil {
+			panic(err)
+		}
+		var firstBlock int64 = 100 * 1024
+		var size = info.Size()
+		if size < firstBlock {
+			firstBlock = size
+		}
+		t, err := follower.New(file, follower.Config{
 			Whence: io.SeekEnd,
-			Offset: -1024 * 32,
+			Offset: -firstBlock,
 			Reopen: true,
 		})
+		if err != nil {
+			panic(err)
+		}
 		// for line := range t.Lines {
 		// 	fmt.Println(line.Text)
 		// }
@@ -67,7 +79,7 @@ func main() {
 		if !ok {
 			panic("expected http.ResponseWriter to be an http.Flusher")
 		}
-		//		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Header().Set("Connection", "keep-alive")
@@ -78,6 +90,10 @@ func main() {
 			select {
 			case line := <-lines:
 				{
+					err := t.Err()
+					if err != nil {
+						panic(err)
+					}
 					log.Printf("%s | %s | %v", r.RemoteAddr, line.String(), t.Err())
 					fmt.Fprintf(w, "event: log\ndata: %s\n\n", line.String())
 					flusher.Flush() // Trigger "chunked" encoding and send a chunk...
