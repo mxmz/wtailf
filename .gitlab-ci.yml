@@ -37,8 +37,8 @@ compile:
     paths:
       - go/wtailf
 
-assemble:
-  stage: build
+final:
+  stage: assemble
   needs: ["compile"]
   dependencies:
     - compile
