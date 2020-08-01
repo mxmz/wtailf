@@ -30,6 +30,7 @@ format:
 
 compile:
   stage: build
+  needs: []
   script:
     - go build ./cmd/wtailf
   artifacts:
