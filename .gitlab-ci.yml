@@ -31,7 +31,7 @@ format:
 compile:
   stage: build
   script:
-    - go build ./cmd/wtailf/ -o $CI_PROJECT_DIR/wtailf
+    - go build ./cmd/wtailf
   artifacts:
     paths:
       - wtailf
