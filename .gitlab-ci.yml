@@ -57,7 +57,7 @@ final:
     - ls -la $CI_PROJECT_DIR/vue/wtailf/dist
     - ln -s $CI_PROJECT_DIR/vue/wtailf/dist $CI_PROJECT_DIR/go
     - cd $CI_PROJECT_DIR/go
-    - tar zcvf wtailf-dist.tar.gz wtailf dist
+    - tar zcvf -h wtailf-dist.tar.gz wtailf dist
   artifacts:
     paths:
       - go/wtailf-dist.tar.gz  
