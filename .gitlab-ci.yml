@@ -14,7 +14,7 @@ before_script:
   - mkdir -p $GOPATH/src/$(dirname $REPO_NAME)
   - ln -svf $CI_PROJECT_DIR/go $GOPATH/src/$REPO_NAME
 stages:
-  - test
+#  - test
   - build
   - assemble
 
@@ -53,6 +53,6 @@ build-vue:
 final:
   stage: assemble
   script:
-    ls -la $CI_PROJECT_DIR/go/
-    ls -la $CI_PROJECT_DIR/vue/dist
+    - ls -la $CI_PROJECT_DIR/go/
+    - ls -la $CI_PROJECT_DIR/vue/dist
 
