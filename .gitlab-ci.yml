@@ -19,7 +19,7 @@ before_script:
 stages:
   - test
   - build
-  - deploy
+  - assemble
 
 format:
   stage: test
@@ -36,3 +36,12 @@ compile:
   artifacts:
     paths:
       - go/wtailf
+
+assemble:
+  stage: build
+  needs: ["compile"]
+  dependencies:
+    - compile
+  script:
+    ls -la go/
+
