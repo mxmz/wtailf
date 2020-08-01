@@ -34,4 +34,4 @@ compile:
     - go build ./cmd/wtailf
   artifacts:
     paths:
-      - wtailf
+      - go/wtailf
