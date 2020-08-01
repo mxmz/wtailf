@@ -1,5 +1,4 @@
 # This file is a template, and might need editing before it works on your project.
-image: golang:latest
 
 variables:
   # Please edit to your GitLab project
@@ -14,34 +13,46 @@ variables:
 before_script:
   - mkdir -p $GOPATH/src/$(dirname $REPO_NAME)
   - ln -svf $CI_PROJECT_DIR/go $GOPATH/src/$REPO_NAME
-  - cd $GOPATH/src/$REPO_NAME
-
 stages:
   - test
   - build
   - assemble
 
 format:
+  image: golang:latest
   stage: test
   script:
+    - cd $GOPATH/src/$REPO_NAME
     - go fmt $(go list ./... | grep -v /vendor/)
     - go vet $(go list ./... | grep -v /vendor/)
     - go test -race $(go list ./... | grep -v /vendor/)
 
-compile:
+build-go:
+  image: golang:latest
   stage: build
   needs: []
   script:
+    - cd $GOPATH/src/$REPO_NAME
     - go build ./cmd/wtailf
   artifacts:
     paths:
       - go/wtailf
 
+build-vue:
+  image: node:10.15.3
+  stage: build
+  needs: []
+  script:
+    - cd vue/wtailf
+    - npm install
+    - ./node_modules/.bin/vue-cli-service build
+  artifacts: 
+    paths:
+      - vue/wtailf/dist
+
 final:
   stage: assemble
-  needs: ["compile"]
-  dependencies:
-    - compile
   script:
     ls -la $CI_PROJECT_DIR/go/
+    ls -la $CI_PROJECT_DIR/vue/dist
 
