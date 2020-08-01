@@ -37,6 +37,7 @@ build-go:
   artifacts:
     paths:
       - go/wtailf
+    expire_in: 1 hour  
 
 build-vue:
   image: node:10.15.3
@@ -49,6 +50,7 @@ build-vue:
   artifacts: 
     paths:
       - vue/wtailf/dist
+    expire_in: 1 hour
 
 final:
   stage: assemble
@@ -58,8 +60,10 @@ final:
     - ln -s $CI_PROJECT_DIR/vue/wtailf/dist $CI_PROJECT_DIR/go
     - cd $CI_PROJECT_DIR/go
     - tar zcvhf wtailf-dist.tar.gz wtailf dist
-    - env
+    - md5sum wtailf-dist.tar.gz > wtailf-dist.tar.gz.md5
   artifacts:
     paths:
-      - go/wtailf-dist.tar.gz  
+      - go/wtailf-dist.tar.gz
+      - go/wtailf-dist.tar.gz.md5
+
 
