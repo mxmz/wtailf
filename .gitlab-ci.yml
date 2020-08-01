@@ -43,5 +43,5 @@ final:
   dependencies:
     - compile
   script:
-    ls -la go/
+    ls -la $CI_PROJECT_DIR/go/
 
