@@ -1,11 +1,15 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"path"
+	"regexp"
 	"strings"
 
 	"github.com/papertrail/go-tail/follower"
@@ -42,6 +46,35 @@ func test(c int) {
 
 }
 
+var filePattern = regexp.MustCompile(`\.log$|\.stderr|\.stdout$`)
+
+func getSourceMap(sources []string) []string {
+	var m = []string{}
+	for _, s := range sources {
+		var info, err = os.Stat(s)
+		if err != nil {
+			panic(err)
+		}
+		if info.Mode().IsRegular() {
+			m = append(m, s)
+		}
+		if info.Mode().IsDir() {
+			var dir = s
+			var ii, err = ioutil.ReadDir(dir)
+			if err != nil {
+				panic(err)
+			}
+			for _, i := range ii {
+				if filePattern.MatchString(i.Name()) {
+					m = append(m, path.Join(dir, i.Name()))
+				}
+			}
+		}
+	}
+	return m
+
+}
+
 func main() {
 
 	// go test(1)
@@ -50,11 +83,27 @@ func main() {
 
 	// <-time.Tick(60 * time.Minute)
 
-	var file = os.Args[1]
+	//var file = os.Args[1]
+	var sources = os.Args[2:]
 	fs := &fsAdapted{http.FileServer(http.Dir("./dist"))}
 	http.Handle("/", fs)
+	http.HandleFunc("/sources", func(w http.ResponseWriter, r *http.Request) {
+		var m = getSourceMap(sources)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(200)
+		enc := json.NewEncoder(w)
+		enc.Encode(m)
+	})
 	http.HandleFunc("/events", func(w http.ResponseWriter, r *http.Request) {
-		file := file
+		source := r.URL.Query().Get("source")
+		file := ""
+		var m = getSourceMap(sources)
+		for _, s := range m {
+			if s == source {
+				file = s
+			}
+		}
+
 		info, err := os.Stat(file)
 		if err != nil {
 			panic(err)
