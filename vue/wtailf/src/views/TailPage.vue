@@ -1,17 +1,17 @@
 <template>
   <div class="home">
     <hr>
-    <Prova msg=""/> </div>
+    <Tail msg=""/> </div>
 </template>
 
 <script>
 // @ is an alias to /src
-import Prova from '@/components/Prova.vue'
+import Tail from '@/components/Tail.vue'
 
 export default {
-  name: 'Home',
+  name: 'TailPage',
   components: {
-    Prova
+    Tail
   }
 }
 </script>

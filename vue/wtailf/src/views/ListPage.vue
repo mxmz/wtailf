@@ -1,0 +1,17 @@
+<template>
+  <div class="home">
+    <hr>
+    <List /> </div>
+</template>
+
+<script>
+// @ is an alias to /src
+import List from '@/components/List.vue'
+
+export default {
+  name: 'ListPage',
+  components: {
+    List
+  }
+}
+</script>
