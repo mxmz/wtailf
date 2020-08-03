@@ -10,7 +10,7 @@
             "options": {
                 "cwd": "${workspaceFolder}/cmd/wtailf"
             },
-            "args": ["run", "main.go", "../../.temp", "/var/log/", "/var/log/syslog"]
+            "args": ["run", "main.go", ":8081", "/var/log/", "/var/log/syslog"]
             
         }
     ]

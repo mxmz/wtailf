@@ -83,7 +83,7 @@ func main() {
 
 	// <-time.Tick(60 * time.Minute)
 
-	//var file = os.Args[1]
+	var bindAddr = os.Args[1]
 	var sources = os.Args[2:]
 	fs := &fsAdapted{http.FileServer(http.Dir("./dist"))}
 	http.Handle("/", fs)
@@ -159,5 +159,5 @@ func main() {
 	})
 
 	log.Print("Listening on localhost:8081")
-	log.Fatal(http.ListenAndServe(":8081", nil))
+	log.Fatal(http.ListenAndServe(bindAddr, nil))
 }
