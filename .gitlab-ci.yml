@@ -48,7 +48,7 @@ build-vue:
   script:
     - cd vue/wtailf
     - npm install
-    - npm build
+    - npm run-script build
   artifacts: 
     paths:
       - go/cmd/wtailf/dist
