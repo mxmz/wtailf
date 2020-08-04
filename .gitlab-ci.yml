@@ -37,9 +37,10 @@ build-go:
     - cd $GOPATH/src/$REPO_NAME/cmd/wtailf
     - packr build -v 
     - ls -la
+    - env
   artifacts:
     paths:
-      - go/cmd/wtailf
+      - go/cmd/wtailf/wtailf
 
 build-vue:
   image: node:10.15.3
