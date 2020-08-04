@@ -15,7 +15,8 @@ before_script:
   - ln -svf $CI_PROJECT_DIR/go $GOPATH/src/$REPO_NAME
 stages:
   - test
-  - build
+  - build1
+  - build2
   - assemble
 
 #format:
@@ -29,7 +30,7 @@ stages:
 
 build-go:
   image: golang:latest
-  stage: build
+  stage: build2
   needs: ["build-vue"]
   script:
     - go get -u github.com/gobuffalo/packr/packr
@@ -41,7 +42,7 @@ build-go:
 
 build-vue:
   image: node:10.15.3
-  stage: build
+  stage: build1
   needs: []
   script:
     - cd vue/wtailf
