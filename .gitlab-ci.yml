@@ -30,14 +30,14 @@ stages:
 build-go:
   image: golang:latest
   stage: build
-  needs: []
+  needs: ["build-vue"]
   script:
-    - cd $GOPATH/src/$REPO_NAME
-    - go build ./cmd/wtailf
+    - go get -u github.com/gobuffalo/packr/packr
+    - cd $GOPATH/src/$REPO_NAME/cmd/wtailf
+    - packr build -v 
   artifacts:
     paths:
       - go/wtailf
-    expire_in: 1 hour  
 
 build-vue:
   image: node:10.15.3
@@ -49,7 +49,7 @@ build-vue:
     - ./node_modules/.bin/vue-cli-service build
   artifacts: 
     paths:
-      - vue/wtailf/dist
+      - go/cmd/wtailf/dist
     expire_in: 1 hour
 
 final:
