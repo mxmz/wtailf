@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/gobuffalo/packr"
 	"github.com/papertrail/go-tail/follower"
 )
 
@@ -85,7 +86,8 @@ func main() {
 
 	var bindAddr = os.Args[1]
 	var sources = os.Args[2:]
-	fs := &fsAdapted{http.FileServer(http.Dir("./dist"))}
+
+	fs := &fsAdapted{http.FileServer(packr.NewBox("./dist"))}
 	http.Handle("/", fs)
 	http.HandleFunc("/sources", func(w http.ResponseWriter, r *http.Request) {
 		var m = getSourceMap(sources)

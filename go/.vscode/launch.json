@@ -12,7 +12,7 @@
             "program": "${fileDirname}",
             "env": {},
             "args": [
-                "../../.temp"
+                ":8081", "/var/log/", "/var/log/syslog"
             ]
         }
     ]
