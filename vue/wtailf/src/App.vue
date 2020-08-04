@@ -1,20 +1,13 @@
 <template>
   <v-app>
     <v-app-bar app color="primary" class>
-
-        <v-row cols="12">
-        <v-col cols="10" >
-        <!-- <v-row justify="space-around" align="start"> -->
-          <router-link to="/" >
-            <v-btn x-small>Home</v-btn>
-          </router-link> |
-          <router-link to="/tail">
-            <v-btn x-small>Tail</v-btn>
-          </router-link> |
+      <v-row cols="12">
+        <v-col cols="10">
           <router-link to="/list">
-            <v-btn x-small>List</v-btn>
+            <v-btn small fab absolute>
+              <v-icon>mdi-format-list-bulleted</v-icon>
+            </v-btn>
           </router-link>
-        <!-- </v-row> -->
         </v-col>
 
         <v-col cols="2">
@@ -23,7 +16,7 @@
             <v-icon>mdi-github</v-icon>
           </v-btn>
         </v-col>
-        </v-row>
+      </v-row>
     </v-app-bar>
 
     <v-main>

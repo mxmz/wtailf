@@ -4,8 +4,8 @@
       indeterminate
       color="yellow darken-2"
     ></v-progress-linear>
-    <!-- input v-model="filter" -->
-    <v-text-field v-model="filter" :rules="rules" hint="Filter" ></v-text-field>
+    <v-container>
+    <v-text-field v-model="filter" :rules="rules" hint="Filter" outlined ></v-text-field>
     <div>
       <div v-for="a in filteredList" v-bind:key="a.idx">
         <div>
@@ -14,6 +14,7 @@
         </div>
       </div>
     </div>
+    </v-container>
   </div>
 </template>
 
