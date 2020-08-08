@@ -33,8 +33,7 @@ export default class Tail extends Vue {
   private list: {idx: number; message: string}[] = [];
   private filter = ''
   private rules = [
-    (value: string) => !!value || 'Required.',
-    (value: string) => (value || '').length <= 30 || 'Max 20 characters'
+
   ]
 
   private running = 0
