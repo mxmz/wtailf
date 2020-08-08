@@ -24,7 +24,11 @@
     </v-main>
   </v-app>
 </template>
-
+<style>
+* {
+  text-transform: none !important;
+}
+</style>
 <script lang="ts">
 import Vue from 'vue'
 
