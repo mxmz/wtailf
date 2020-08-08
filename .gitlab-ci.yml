@@ -15,7 +15,8 @@ before_script:
   - ln -svf $CI_PROJECT_DIR/go $GOPATH/src/$REPO_NAME
 stages:
   - test
-  - build
+  - build1
+  - build2
   - assemble
 
 #format:
@@ -29,41 +30,30 @@ stages:
 
 build-go:
   image: golang:latest
-  stage: build
-  needs: []
+  stage: build2
+  needs: ["build-vue"]
   script:
-    - cd $GOPATH/src/$REPO_NAME
-    - go build ./cmd/wtailf
+    - go get -u github.com/gobuffalo/packr/packr
+    - cd $GOPATH/src/$REPO_NAME/cmd/wtailf
+    - packr build -v 
+    - ls -la
+    - env
   artifacts:
     paths:
-      - go/wtailf
-    expire_in: 1 hour  
+      - go/cmd/wtailf/wtailf
 
 build-vue:
   image: node:10.15.3
-  stage: build
+  stage: build1
   needs: []
   script:
     - cd vue/wtailf
     - npm install
-    - ./node_modules/.bin/vue-cli-service build
+    - npm run-script build
   artifacts: 
     paths:
-      - vue/wtailf/dist
+      - go/cmd/wtailf/dist
     expire_in: 1 hour
 
-final:
-  stage: assemble
-  script:
-    - ls -la $CI_PROJECT_DIR/go/
-    - ls -la $CI_PROJECT_DIR/vue/wtailf/dist
-    - ln -s $CI_PROJECT_DIR/vue/wtailf/dist $CI_PROJECT_DIR/go
-    - cd $CI_PROJECT_DIR/go
-    - tar zcvhf wtailf-dist.tar.gz wtailf dist
-    - md5sum wtailf-dist.tar.gz > wtailf-dist.tar.gz.md5
-  artifacts:
-    paths:
-      - go/wtailf-dist.tar.gz
-      - go/wtailf-dist.tar.gz.md5
 
 
