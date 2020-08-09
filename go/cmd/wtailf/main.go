@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -106,11 +105,11 @@ func main() {
 	hostname, _ := os.Hostname()
 
 	for _, i := range myIfaces {
-		fmt.Printf("%s\n", i)
+		log.Printf("%s\n", i)
 		first, last := cidr.AddressRange(i.Net)
-		fmt.Printf("%s %s %s\n", i, first, last)
-		var svcURL = fmt.Sprintf("http://%s:%d", i.IP, bindAddr.Port)
-		var svcID = fmt.Sprintf("%s-%d", hostname, bindAddr.Port)
+		log.Printf("%s %s %s\n", i, first, last)
+		var svcURL = log.Sprintf("http://%s:%d", i.IP, bindAddr.Port)
+		var svcID = log.Sprintf("%s-%d", hostname, bindAddr.Port)
 		go serviceAnnouncer(svcID, svcURL, last)
 	}
 
@@ -125,7 +124,7 @@ func main() {
 			select {
 			case message := <-ch:
 				{
-					fmt.Printf("%v\n", message)
+					log.Printf("%v\n", message)
 					peersLock.Lock()
 					peers[message.Endpoint] = message
 					peersLock.Unlock()
@@ -177,6 +176,8 @@ func main() {
 		if size < firstBlock {
 			firstBlock = size
 		}
+
+		log.Printf("follower: %s  %d\n", file, firstBlock)
 		t, err := follower.New(file, follower.Config{
 			Whence: io.SeekEnd,
 			Offset: -firstBlock,
@@ -186,7 +187,7 @@ func main() {
 			panic(err)
 		}
 		// for line := range t.Lines {
-		// 	fmt.Println(line.Text)
+		// 	log.Println(line.Text)
 		// }
 		flusher, ok := w.(http.Flusher)
 		if !ok {
@@ -198,6 +199,7 @@ func main() {
 		w.Header().Set("Connection", "keep-alive")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		var lines = t.Lines()
+		flusher.Flush()
 	LOOP:
 		for {
 			select {
@@ -208,7 +210,7 @@ func main() {
 						panic(err)
 					}
 					log.Printf("%s | %s | %v", r.RemoteAddr, line.String(), t.Err())
-					fmt.Fprintf(w, "event: log\ndata: %s\n\n", line.String())
+					log.Fprintf(w, "event: log\ndata: %s\n\n", line.String())
 					flusher.Flush() // Trigger "chunked" encoding and send a chunk...
 				}
 			case <-r.Context().Done():
@@ -236,7 +238,7 @@ func serviceAnnouncer(serviceID string, serviceURL string, broadcast net.IP) {
 	connection, err := net.DialUDP("udp", nil, addr)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 	defer connection.Close()
@@ -249,7 +251,7 @@ func serviceAnnouncer(serviceID string, serviceURL string, broadcast net.IP) {
 		delay := 10 * time.Second
 		_, err := connection.Write(buffer.Bytes())
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			delay = 60 * time.Second
 		}
 		time.Sleep(delay)
@@ -270,16 +272,16 @@ func serviceListener(ch chan<- *Service) {
 	for {
 		var message Service
 		inputBytes := make([]byte, 4096)
-		fmt.Printf("Waiting...\n")
+		log.Printf("Waiting...\n")
 		length, _, _ := list.ReadFromUDP(inputBytes)
 		buffer := bytes.NewBuffer(inputBytes[:length])
 		decoder := json.NewDecoder(buffer)
 		err := decoder.Decode(&message)
 		if err != nil {
-			fmt.Printf("Ignoring malformed message: %s\n", string(inputBytes))
+			log.Printf("Ignoring malformed message: %s\n", string(inputBytes))
 			continue
 		}
-		fmt.Printf("[%v]\n", message)
+		log.Printf("[%v]\n", message)
 		ch <- &message
 	}
 }
