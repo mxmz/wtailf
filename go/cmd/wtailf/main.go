@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -108,8 +109,8 @@ func main() {
 		log.Printf("%s\n", i)
 		first, last := cidr.AddressRange(i.Net)
 		log.Printf("%s %s %s\n", i, first, last)
-		var svcURL = log.Sprintf("http://%s:%d", i.IP, bindAddr.Port)
-		var svcID = log.Sprintf("%s-%d", hostname, bindAddr.Port)
+		var svcURL = fmt.Sprintf("http://%s:%d", i.IP, bindAddr.Port)
+		var svcID = fmt.Sprintf("%s-%d", hostname, bindAddr.Port)
 		go serviceAnnouncer(svcID, svcURL, last)
 	}
 
@@ -210,7 +211,7 @@ func main() {
 						panic(err)
 					}
 					log.Printf("%s | %s | %v", r.RemoteAddr, line.String(), t.Err())
-					log.Fprintf(w, "event: log\ndata: %s\n\n", line.String())
+					fmt.Fprintf(w, "event: log\ndata: %s\n\n", line.String())
 					flusher.Flush() // Trigger "chunked" encoding and send a chunk...
 				}
 			case <-r.Context().Done():
