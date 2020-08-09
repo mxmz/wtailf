@@ -36,11 +36,13 @@ build-go:
     - go get -u github.com/gobuffalo/packr/packr
     - cd $GOPATH/src/$REPO_NAME/cmd/wtailf
     - packr build -v 
+    - GOOS=windows packr build -v 
     - ls -la
     - env
   artifacts:
     paths:
       - go/cmd/wtailf/wtailf
+      - go/cmd/wtailf/wtailf.exe
 
 build-vue:
   image: node:10.15.3
