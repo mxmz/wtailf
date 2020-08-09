@@ -178,7 +178,7 @@ func main() {
 			firstBlock = size
 		}
 
-		log.Printf("follower: %s  %d\n", file, firstBlock)
+		log.Printf("follower: %s  %d [%d]\n", file, firstBlock, size)
 		t, err := follower.New(file, follower.Config{
 			Whence: io.SeekEnd,
 			Offset: -firstBlock,
