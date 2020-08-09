@@ -30,6 +30,7 @@ export default class Tail extends Vue {
 
   private source: EventSource | null = null;
   private idx = 0;
+  private subject = '';
   private list: {idx: number; message: string}[] = [];
   private filter = ''
   private rules = [
@@ -44,7 +45,8 @@ export default class Tail extends Vue {
     const q = newVal.query
     console.log(q)
     this.unsubscribe()
-    this.substribe((q.source || '') as string)
+    this.subject = (q.source || '') as string
+    this.subscribe()
   }
 
   constructor () {
@@ -60,9 +62,9 @@ export default class Tail extends Vue {
     console.log('mounted')
   }
 
-  substribe (subject: string) {
+  subscribe () {
     this.running++
-    this.source = new EventSource('/events?source=' + encodeURIComponent(subject))
+    this.source = new EventSource('/events?source=' + encodeURIComponent(this.subject))
     this.source.addEventListener('log', (_event: Event) => {
       const event = _event as MessageEvent
       // console.log(event)

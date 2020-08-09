@@ -13,7 +13,7 @@ const routes: Array<RouteConfig> = [
   },
   {
     path: '/list',
-    name: 'List',
+    name: 'File list',
     // route level code-splitting
     // this generates a separate chunk (about.[hash].js) for this route
     // which is lazy-loaded when the route is visited.
@@ -26,6 +26,14 @@ const routes: Array<RouteConfig> = [
     // this generates a separate chunk (about.[hash].js) for this route
     // which is lazy-loaded when the route is visited.
     component: () => import(/* webpackChunkName: "tail" */ '../views/TailPage.vue')
+  },
+  {
+    path: '/peerlist',
+    name: 'Peer list',
+    // route level code-splitting
+    // this generates a separate chunk (about.[hash].js) for this route
+    // which is lazy-loaded when the route is visited.
+    component: () => import(/* webpackChunkName: "peers" */ '../views/PeersPage.vue')
   }
 ]
 

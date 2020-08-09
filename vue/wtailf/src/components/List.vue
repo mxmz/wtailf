@@ -3,9 +3,11 @@
     <v-text-field v-model="filter" hint="Filter" outlined></v-text-field>
     <v-col>
       <v-row v-for="a in filteredItems" v-bind:key="a">
-        <router-link :to="{ path: 'tail', query: { source: a }}">
-          <v-btn>{{a}}</v-btn>
-        </router-link>
+
+          <v-btn :to="{ path: 'tail', query: { source: a }}">
+            <v-icon left>mdi-file-outline</v-icon>
+            {{a}}</v-btn>
+
       </v-row>
     </v-col>
   </v-container>

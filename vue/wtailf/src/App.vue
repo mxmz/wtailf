@@ -3,11 +3,20 @@
     <v-app-bar app color="primary" class>
       <v-row cols="12">
         <v-col cols="10">
-          <router-link to="/list">
-            <v-btn small fab absolute>
-              <v-icon>mdi-format-list-bulleted</v-icon>
+
+            <v-btn small fab to="/list" :disabled="$route.path === '/list' || $route.path === '/'">
+              <v-icon>mdi-format-list-checkbox</v-icon>
             </v-btn>
-          </router-link>
+
+          <v-divider class="mx-4" vertical inset></v-divider>
+
+            <v-btn small fab to="/peerlist" :disabled="$route.path === '/peerlist'">
+              <v-icon>mdi-lan</v-icon>
+            </v-btn>
+
+          <v-divider class="mx-4" vertical inset></v-divider>
+          <b style="font-family: monospace">{{title}}</b>
+
         </v-col>
 
         <v-col cols="2">
@@ -40,7 +49,7 @@ export default Vue.extend({
   },
 
   data: () => ({
-    //
+    title: document.location.hostname + ' : ' + document.location.port
   })
 })
 </script>
