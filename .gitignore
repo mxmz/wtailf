@@ -5,3 +5,4 @@ go/cmd/wtailf/wtailf
 go/cmd/wtailf/dist
 go/cmd/wtailf/__debug_bin
 go/.temp
+go/cmd/wtailf/wtailf.exe

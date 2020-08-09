@@ -23,7 +23,9 @@
 			"**/.temp*": true,
 			"**/__debug_bin": true,
 			"**/cmd/wtailf/dist": false,
-			"**/cmd/wtailf/wtailf": true
+			"**/cmd/wtailf/wtailf": true,
+			"**/cmd/wtailf/wtailf.exe": true,
+			"**/dist": true
 		},
 		"eslint.codeActionsOnSave.mode": "all",
 		"eslint.format.enable": true,
