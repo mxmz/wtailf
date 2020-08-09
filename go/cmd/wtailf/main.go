@@ -236,7 +236,8 @@ func serviceAnnouncer(serviceID string, serviceURL string, broadcast net.IP) {
 	connection, err := net.DialUDP("udp", nil, addr)
 
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		return
 	}
 	defer connection.Close()
 	hostname, _ := os.Hostname()
