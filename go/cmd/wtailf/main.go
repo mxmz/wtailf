@@ -112,8 +112,9 @@ func main() {
 		var svcURL = fmt.Sprintf("http://%s:%d", i.IP, bindAddr.Port)
 		var svcID = fmt.Sprintf("%s-%d", hostname, bindAddr.Port)
 		go serviceAnnouncer(svcID, svcURL, last)
-		go serviceListener(announceCh)
 	}
+
+	go serviceListener(announceCh)
 
 	var peersLock sync.RWMutex
 	var peers = map[string]*Service{}
