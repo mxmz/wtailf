@@ -23,7 +23,7 @@ func GetNetInterfaceAddresses() []InterfaceAddress {
 	var rv = []InterfaceAddress{}
 IFACES:
 	for _, iface := range interfaces {
-		//fmt.Printf("%s %v\n", iface.Name, iface.Addrs)
+		fmt.Printf("%s %v\n", iface.Name, iface.Addrs)
 		for _, toSkip := range []string{"lo", "docker", "tun", "vpn"} {
 			if strings.HasPrefix(iface.Name, toSkip) {
 				continue IFACES
