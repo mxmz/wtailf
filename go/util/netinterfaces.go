@@ -37,10 +37,9 @@ IFACES:
 			continue
 		}
 		for _, a := range addrs {
-			if !strings.Contains(a.String(), ":") {
-				addr := a.String()
+			addr := a.String()
+			if !strings.Contains(addr, ":") {
 				ip, ipnet, err := net.ParseCIDR(addr)
-
 				fmt.Printf("%s %s\n", ip, ipnet)
 				if err == nil {
 					rv = append(rv, InterfaceAddress{ip, ipnet})

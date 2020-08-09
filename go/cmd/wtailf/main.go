@@ -245,11 +245,13 @@ func serviceAnnouncer(serviceID string, serviceURL string, broadcast net.IP) {
 	encoder := json.NewEncoder(&buffer)
 	encoder.Encode(svc)
 	for {
+		delay := 10 * time.Second
 		_, err := connection.Write(buffer.Bytes())
 		if err != nil {
-			panic(err)
+			fmt.Println(err)
+			delay = 60 * time.Second
 		}
-		time.Sleep(10 * time.Second)
+		time.Sleep(delay)
 	}
 }
 
