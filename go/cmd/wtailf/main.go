@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net"
@@ -18,7 +17,7 @@ import (
 
 	"github.com/apparentlymart/go-cidr/cidr"
 	"github.com/gobuffalo/packr"
-	"github.com/papertrail/go-tail/follower"
+	"github.com/hpcloud/tail"
 	"mxmz.it/wtailf/util"
 )
 
@@ -33,25 +32,7 @@ func (h *fsAdapted) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.Handler.ServeHTTP(w, r)
 }
 
-func test(c int) {
-
-	t, _ := follower.New("../../.temp", follower.Config{
-		Whence: io.SeekEnd,
-		Offset: 0,
-		Reopen: true,
-	})
-	var lines = t.Lines()
-	for {
-		select {
-		case line := <-lines:
-			{
-				log.Println(c)
-				log.Println(line)
-			}
-		}
-	}
-
-}
+//
 
 var filePattern = regexp.MustCompile(`\.log$|\.stderr|\.stdout$`)
 
@@ -179,11 +160,12 @@ func main() {
 		}
 
 		log.Printf("follower: %s  %d\n", file, firstBlock)
-		t, err := follower.New(file, follower.Config{
-			Whence: io.SeekEnd,
-			Offset: -firstBlock,
-			Reopen: true,
-		})
+		// t, err := follower.New(file, follower.Config{
+		// 	Whence: io.SeekEnd,
+		// 	Offset: -firstBlock,
+		// 	Reopen: true,
+		// })
+		t, err := tail.TailFile(file, tail.Config{Follow: true, ReOpen: true, Location: &tail.SeekInfo{Offset: -firstBlock, Whence: os.SEEK_END}})
 		if err != nil {
 			panic(err)
 		}
@@ -199,19 +181,23 @@ func main() {
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Header().Set("Connection", "keep-alive")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		var lines = t.Lines()
+		//var lines = t.Lines()
+		var lines = t.Lines
 		flusher.Flush()
+		defer t.Stop()
 	LOOP:
 		for {
 			select {
 			case line := <-lines:
 				{
-					err := t.Err()
-					if err != nil {
-						panic(err)
-					}
-					log.Printf("%s | %s | %v", r.RemoteAddr, line.String(), t.Err())
-					fmt.Fprintf(w, "event: log\ndata: %s\n\n", line.String())
+					// err := t.Err()
+					// if err != nil {
+					// 	panic(err)
+					// }
+					//log.Printf("%s | %s | %v", r.RemoteAddr, line.String(), t.Err())
+					log.Printf("%s | %s ", r.RemoteAddr, line)
+					//fmt.Fprintf(w, "event: log\ndata: %s\n\n", line.String())
+					fmt.Fprintf(w, "event: log\ndata: %s\n\n", line.Text)
 					flusher.Flush() // Trigger "chunked" encoding and send a chunk...
 				}
 			case <-r.Context().Done():
@@ -222,7 +208,7 @@ func main() {
 			}
 
 		}
-		t.Close()
+		//t.Close()
 	})
 
 	log.Print("Listening on " + bindAddrStr)
@@ -286,3 +272,23 @@ func serviceListener(ch chan<- *Service) {
 		ch <- &message
 	}
 }
+
+//func test(c int) {
+
+// 	t, _ := follower.New("../../.temp", follower.Config{
+// 		Whence: io.SeekEnd,
+// 		Offset: 0,
+// 		Reopen: true,
+// 	})
+// 	var lines = t.Lines()
+// 	for {
+// 		select {
+// 		case line := <-lines:
+// 			{
+// 				log.Println(c)
+// 				log.Println(line)
+// 			}
+// 		}
+// 	}
+
+// }
