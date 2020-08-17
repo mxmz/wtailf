@@ -6,7 +6,10 @@
 
           <v-btn :to="{ path: 'tail', query: { source: a }}">
             <v-icon left>mdi-file-outline</v-icon>
-            {{a}}</v-btn>
+            {{a}}
+            </v-btn>
+            <v-divider class="mx-4" vertical inset></v-divider>
+            <v-btn fab x-small :to="{ path: 'tail', query: { source: a }}" :target="'_blank'+a"><v-icon x-small>mdi-open-in-new</v-icon></v-btn>
 
       </v-row>
     </v-col>

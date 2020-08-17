@@ -8,6 +8,8 @@
             <v-icon left>mdi-link</v-icon>
             {{a.hostname}} ({{a.id}})
           </v-btn>
+          <v-divider class="mx-4" vertical inset></v-divider>
+          <v-btn fab x-small :href='a.endpoint' :target="'_blank'+a.endpoint"><v-icon x-small>mdi-open-in-new</v-icon></v-btn>
 
       </v-row>
     </v-col>
