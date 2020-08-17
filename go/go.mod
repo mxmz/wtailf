@@ -8,7 +8,7 @@ require (
 	github.com/gobuffalo/envy v1.9.0 // indirect
 	github.com/gobuffalo/packd v1.0.0
 	github.com/gobuffalo/packr v1.30.1
-	github.com/gobuffalo/packr/v2 v2.8.0 // indirect
+	github.com/gobuffalo/packr/v2 v2.8.0
 	github.com/hpcloud/tail v1.0.0
 	github.com/karrick/godirwalk v1.15.6 // indirect
 	github.com/markbates/pkger v0.17.0

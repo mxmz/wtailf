@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/apparentlymart/go-cidr/cidr"
-	"github.com/gobuffalo/packr"
+	"github.com/gobuffalo/packr/v2"
 	"github.com/hpcloud/tail"
 	"mxmz.it/wtailf/util"
 )
@@ -117,8 +117,7 @@ func main() {
 	}(announceCh)
 
 	var _ = myIfaces
-
-	fs := &fsAdapted{http.FileServer(packr.NewBox("./dist"))}
+	fs := &fsAdapted{http.FileServer(packr.New("dist", "./dist"))}
 	http.Handle("/", fs)
 	http.HandleFunc("/sources", func(w http.ResponseWriter, r *http.Request) {
 		var m = getSourceMap(sources)
