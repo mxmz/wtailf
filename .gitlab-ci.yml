@@ -34,8 +34,9 @@ build-go:
   needs: ["build-vue"]
   script:
     - go get -u github.com/gobuffalo/packr/packr
+    - go get -u github.com/gobuffalo/packr/v2/packr2
     - cd $GOPATH/src/$REPO_NAME/cmd/wtailf
-    - packr build -v 
+    - packr2 build -v 
     - GOOS=windows packr build -v 
     - ls -la
   artifacts:
