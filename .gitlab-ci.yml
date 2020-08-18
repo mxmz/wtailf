@@ -10,9 +10,10 @@ variables:
 # the default GOPATH being /go, then you'd need to have your
 # repository in /go/src/gitlab.com/namespace/project
 # Thus, making a symbolic link corrects this.
-before_script:
-  - mkdir -p $GOPATH/src/$(dirname $REPO_NAME)
-  - ln -svf $CI_PROJECT_DIR/go $GOPATH/src/$REPO_NAME
+#before_script:
+#  - mkdir -p $GOPATH/src/$(dirname $REPO_NAME)
+#  - ln -svf $CI_PROJECT_DIR/go $GOPATH/src/$REPO_NAME
+
 stages:
   - test
   - build1
@@ -33,11 +34,12 @@ build-go:
   stage: build2
   needs: ["build-vue"]
   script:
-    - go get -u github.com/gobuffalo/packr/packr
+#    - go get -u github.com/gobuffalo/packr/packr
     - go get -u github.com/gobuffalo/packr/v2/packr2
-    - cd $GOPATH/src/$REPO_NAME/cmd/wtailf
+#    - cd $GOPATH/src/$REPO_NAME/cmd/wtailf
+    - cd $CI_PROJECT_DIR/go/cmd/wtailf
     - packr2 build -v 
-    - GOOS=windows packr build -v 
+    - GOOS=windows packr2 build -v 
     - ls -la
   artifacts:
     paths:
