@@ -36,7 +36,7 @@ func (h *fsAdapted) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 var filePattern = regexp.MustCompile(`\.log$|\.stderr|\.stdout$`)
 
-func getSourceMap(sources []string) []string {
+func getSourceList(sources []string) []string {
 	var m = []string{}
 	for _, s := range sources {
 		var info, err = os.Stat(s)
@@ -52,15 +52,21 @@ func getSourceMap(sources []string) []string {
 			if err != nil {
 				panic(err)
 			}
+			var sublist = []string{}
 			for _, i := range ii {
-				if filePattern.MatchString(i.Name()) {
-					m = append(m, path.Join(dir, i.Name()))
+				if i.Mode().IsRegular() && filePattern.MatchString(i.Name()) {
+					sublist = append(sublist, path.Join(dir, i.Name()))
+				} else if i.Mode().IsDir() {
+					sublist = append(sublist, path.Join(dir, i.Name()))
 				}
+			}
+			subsources := getSourceList(sublist)
+			for _, f := range subsources {
+				m = append(m, f)
 			}
 		}
 	}
 	return m
-
 }
 
 type Service struct {
@@ -86,16 +92,18 @@ func main() {
 	var announceCh = make(chan *Service)
 	hostname, _ := os.Hostname()
 
-	for _, i := range myIfaces {
-		log.Printf("%s\n", i)
-		first, last := cidr.AddressRange(i.Net)
-		log.Printf("%s %s %s\n", i, first, last)
-		var svcURL = fmt.Sprintf("http://%s:%d", i.IP, bindAddr.Port)
-		var svcID = fmt.Sprintf("%s-%d", hostname, bindAddr.Port)
-		go serviceAnnouncer(svcID, svcURL, last)
-	}
+	if true {
+		for _, i := range myIfaces {
+			log.Printf("%s\n", i)
+			first, last := cidr.AddressRange(i.Net)
+			log.Printf("%s %s %s\n", i, first, last)
+			var svcURL = fmt.Sprintf("http://%s:%d", i.IP, bindAddr.Port)
+			var svcID = fmt.Sprintf("%s-%d", hostname, bindAddr.Port)
+			go serviceAnnouncer(svcID, svcURL, last)
+		}
 
-	go serviceListener(announceCh)
+		go serviceListener(announceCh)
+	}
 
 	var peersLock sync.RWMutex
 	var peers = map[string]*Service{}
@@ -118,9 +126,10 @@ func main() {
 
 	var _ = myIfaces
 	fs := &fsAdapted{http.FileServer(packr.New("dist", "./dist"))}
+	//fs := &fsAdapted{http.FileServer(http.Dir("./dist"))}
 	http.Handle("/", fs)
 	http.HandleFunc("/sources", func(w http.ResponseWriter, r *http.Request) {
-		var m = getSourceMap(sources)
+		var m = getSourceList(sources)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
 		enc := json.NewEncoder(w)
@@ -141,7 +150,7 @@ func main() {
 	http.HandleFunc("/events", func(w http.ResponseWriter, r *http.Request) {
 		source := r.URL.Query().Get("source")
 		file := ""
-		var m = getSourceMap(sources)
+		var m = getSourceList(sources)
 		for _, s := range m {
 			if s == source {
 				file = s
