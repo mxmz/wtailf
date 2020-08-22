@@ -277,6 +277,7 @@ func serviceListener(ch chan<- *Service) {
 			continue
 		}
 		log.Printf("[%v]\n", message)
+		message.When = time.Now()
 		ch <- &message
 	}
 }
