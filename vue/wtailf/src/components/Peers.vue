@@ -1,18 +1,33 @@
 <template>
   <v-container>
-    <v-text-field v-model="filter" hint="Filter" outlined></v-text-field>
-    <v-col>
-      <v-row v-for="a in filteredItems" v-bind:key="a.hostname">
+    <v-text-field v-model="filter" hint="Filter" placeholder="Filter list" dense></v-text-field>
+    <v-list dense>
+      <template v-for="a in filteredItems">
+        <v-list-item two-lines  v-bind:key="a.id" >
+        <v-list-item-content>
+          <v-list-item-title>
+            <v-icon x-small>mdi-network-outline</v-icon>
+          <a :href='a.endpoint'>
 
-          <v-btn :href='a.endpoint'>
-            <v-icon left>mdi-link</v-icon>
-            {{a.hostname}} ({{a.id}})
-          </v-btn>
-          <v-divider class="mx-4" vertical inset></v-divider>
-          <v-btn fab x-small :href='a.endpoint' :target="'_blank'+a.endpoint"><v-icon x-small>mdi-open-in-new</v-icon></v-btn>
+             {{a.id}}
+          </a>
+          <v-divider class="mx-2" vertical inset></v-divider>
+          <a fab x-small :href='a.endpoint' :target="'_blank'+a.endpoint"><v-icon x-small>mdi-open-in-new</v-icon></a>
+          </v-list-item-title>
+          {{a.hostname}}
+          <v-divider class="mx-2" vertical inset></v-divider>
+           {{a.endpoint}}
+           <v-divider class="mx-2" vertical inset></v-divider>
+           {{a.when | formatDate}}
 
-      </v-row>
-    </v-col>
+        </v-list-item-content>
+
+      </v-list-item>
+      <v-divider class="mx-2" inset v-bind:key="a.hostname" ></v-divider>
+
+      </template>
+      <v-divider class="mx-2" inset></v-divider>
+    </v-list>
   </v-container>
 </template>
 <script lang="ts">

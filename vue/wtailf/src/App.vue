@@ -4,13 +4,13 @@
       <v-row cols="12">
         <v-col cols="10">
 
-            <v-btn small fab to="/list" :disabled="$route.path === '/list' || $route.path === '/'">
-              <v-icon>mdi-format-list-checkbox</v-icon>
+            <v-btn small fab to="/list" :disabled="$route.path === '/list' || $route.path === '/'" title="File list">
+              <v-icon>mdi-file-multiple-outline</v-icon>
             </v-btn>
 
           <v-divider class="mx-4" vertical inset></v-divider>
 
-            <v-btn small fab to="/peerlist" :disabled="$route.path === '/peerlist'">
+            <v-btn small fab to="/peerlist" :disabled="$route.path === '/peerlist'" title="Availble peers">
               <v-icon>mdi-lan</v-icon>
             </v-btn>
 
