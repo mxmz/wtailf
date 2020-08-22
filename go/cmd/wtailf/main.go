@@ -41,7 +41,8 @@ func getSourceList(sources []string) []string {
 	for _, s := range sources {
 		var info, err = os.Stat(s)
 		if err != nil {
-			panic(err)
+			log.Println(err)
+			continue
 		}
 		if info.Mode().IsRegular() {
 			m = append(m, s)
@@ -50,7 +51,8 @@ func getSourceList(sources []string) []string {
 			var dir = s
 			var ii, err = ioutil.ReadDir(dir)
 			if err != nil {
-				panic(err)
+				log.Println(err)
+				continue
 			}
 			var sublist = []string{}
 			for _, i := range ii {
