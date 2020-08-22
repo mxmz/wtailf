@@ -30,7 +30,7 @@ main() {
 
     cat << EOF > /lib/systemd/system/$servicename.service	
 [Unit]
-Description=WTailF
+Description=WTailF [698899335]
 After=network.target nss-lookup.target
 
 [Service]
