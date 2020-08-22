@@ -40,11 +40,12 @@ build-go:
     - cd $CI_PROJECT_DIR/go/cmd/wtailf
     - packr2 build -v 
     - GOOS=windows packr2 build -v 
-    - ls -la
+    - sed "s/698899335/$CI_BUILD_ID/" $CI_PROJECT_DIR/script/linux/wtailf_install_default.sh  > $CI_PROJECT_DIR/wtailf_install_default.sh
   artifacts:
     paths:
       - go/cmd/wtailf/wtailf
       - go/cmd/wtailf/wtailf.exe
+      - wtailf_install_default.sh
 
 build-vue:
   image: node:10.15.3
