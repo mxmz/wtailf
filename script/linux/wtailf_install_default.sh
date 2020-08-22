@@ -37,7 +37,7 @@ After=network.target nss-lookup.target
 ExecStart=$exepath ":18081" $dirs
 TimeoutStopSec=5
 KillMode=process
-User=syslog
+User=wtailf
 
 [Install]
 WantedBy=multi-user.target
