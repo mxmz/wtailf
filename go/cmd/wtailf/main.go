@@ -114,7 +114,7 @@ func main() {
 			select {
 			case message := <-ch:
 				{
-					log.Printf("%v\n", message)
+					//					log.Printf("%v\n", message)
 					peersLock.Lock()
 					peers[message.Endpoint] = message
 					peersLock.Unlock()
@@ -203,7 +203,7 @@ func main() {
 					// 	panic(err)
 					// }
 					//log.Printf("%s | %s | %v", r.RemoteAddr, line.String(), t.Err())
-					log.Printf("%s | %s ", r.RemoteAddr, line)
+					//log.Printf("%s | %s ", r.RemoteAddr, line)
 					//fmt.Fprintf(w, "event: log\ndata: %s\n\n", line.String())
 					fmt.Fprintf(w, "event: log\ndata: %s\n\n", line.Text)
 					flusher.Flush() // Trigger "chunked" encoding and send a chunk...
@@ -267,7 +267,7 @@ func serviceListener(ch chan<- *Service) {
 	for {
 		var message Service
 		inputBytes := make([]byte, 4096)
-		log.Printf("Waiting...\n")
+		//		log.Printf("Waiting...\n")
 		length, _, _ := list.ReadFromUDP(inputBytes)
 		buffer := bytes.NewBuffer(inputBytes[:length])
 		decoder := json.NewDecoder(buffer)
@@ -276,7 +276,7 @@ func serviceListener(ch chan<- *Service) {
 			log.Printf("Ignoring malformed message: %s\n", string(inputBytes))
 			continue
 		}
-		log.Printf("[%v]\n", message)
+		//		log.Printf("[%v]\n", message)
 		message.When = time.Now()
 		ch <- &message
 	}
