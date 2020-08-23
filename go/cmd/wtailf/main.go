@@ -21,17 +21,6 @@ import (
 	"mxmz.it/wtailf/util"
 )
 
-type fsAdapted struct {
-	Handler http.Handler
-}
-
-func (h *fsAdapted) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if strings.Index(r.URL.Path, ".") == -1 {
-		r.URL.Path = "/"
-	}
-	h.Handler.ServeHTTP(w, r)
-}
-
 //
 
 var filePattern = regexp.MustCompile(`\.log$|\.stderr|\.stdout$`)
@@ -78,13 +67,41 @@ type Service struct {
 	When     time.Time `json:"when,omitempty"`
 }
 
+var acl = util.NewACL()
+
+func ifAllowed(w http.ResponseWriter, r *http.Request, f func()) {
+	var host, _, _ = net.SplitHostPort(r.RemoteAddr)
+	var ip = net.ParseIP(host)
+	if acl.IsAllowed(ip) {
+		f()
+	} else {
+		w.WriteHeader(403)
+		w.Write([]byte(ip.String() + " not allowed\n"))
+	}
+}
+
+func authWrap(hndlr func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ifAllowed(w, r, func() {
+			hndlr(w, r)
+		})
+	}
+}
+
+type fsAdapted struct {
+	Handler http.Handler
+}
+
+func (h *fsAdapted) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if strings.Index(r.URL.Path, ".") == -1 {
+		r.URL.Path = "/"
+	}
+	ifAllowed(w, r, func() {
+		h.Handler.ServeHTTP(w, r)
+	})
+}
+
 func main() {
-
-	// go test(1)
-	// go test(2)
-	// go test(3)
-
-	// <-time.Tick(60 * time.Minute)
 
 	var bindAddrStr = os.Args[1]
 	var sources = os.Args[2:]
@@ -94,10 +111,13 @@ func main() {
 	var announceCh = make(chan *Service)
 	hostname, _ := os.Hostname()
 
+	var defaultACL = []util.ACLEntry{util.LocalhostAllow()}
+
 	if true {
 		for _, i := range myIfaces {
 			log.Printf("%s\n", i)
 			first, last := cidr.AddressRange(i.Net)
+			defaultACL = append(defaultACL, util.NewACLEntry(i.Net, true))
 			log.Printf("%s %s %s\n", i, first, last)
 			var svcURL = fmt.Sprintf("http://%s:%d", i.IP, bindAddr.Port)
 			var svcID = fmt.Sprintf("%s-%d", hostname, bindAddr.Port)
@@ -105,6 +125,17 @@ func main() {
 		}
 
 		go serviceListener(announceCh)
+	}
+
+	envACL := os.Getenv("WTAILF_ACL")
+	if len(envACL) == 0 {
+		acl = util.NewACL(defaultACL...)
+	} else {
+		envACLParsed, err := util.ParseACL(envACL)
+		if err != nil {
+			panic(err)
+		}
+		acl = util.NewACL(envACLParsed...)
 	}
 
 	var peersLock sync.RWMutex
@@ -127,17 +158,18 @@ func main() {
 	}(announceCh)
 
 	var _ = myIfaces
-	fs := &fsAdapted{http.FileServer(packr.New("dist", "./dist"))}
-	//fs := &fsAdapted{http.FileServer(http.Dir("./dist"))}
-	http.Handle("/", fs)
-	http.HandleFunc("/sources", func(w http.ResponseWriter, r *http.Request) {
+
+	http.Handle("/", &fsAdapted{http.FileServer(packr.New("dist", "./dist"))})
+
+	http.HandleFunc("/sources", authWrap(func(w http.ResponseWriter, r *http.Request) {
 		var m = getSourceList(sources)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
 		enc := json.NewEncoder(w)
 		enc.Encode(m)
-	})
-	http.HandleFunc("/peers", func(w http.ResponseWriter, r *http.Request) {
+	}))
+
+	http.HandleFunc("/peers", authWrap(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		var rv []*Service
 		peersLock.RLock()
@@ -148,8 +180,9 @@ func main() {
 		w.WriteHeader(200)
 		enc := json.NewEncoder(w)
 		enc.Encode(rv)
-	})
-	http.HandleFunc("/events", func(w http.ResponseWriter, r *http.Request) {
+	}))
+
+	http.HandleFunc("/events", authWrap(func(w http.ResponseWriter, r *http.Request) {
 		source := r.URL.Query().Get("source")
 		file := ""
 		var m = getSourceList(sources)
@@ -219,7 +252,7 @@ func main() {
 
 		}
 		//t.Close()
-	})
+	}))
 
 	log.Print("Listening on " + bindAddrStr)
 	log.Fatal(http.ListenAndServe(bindAddrStr, nil))

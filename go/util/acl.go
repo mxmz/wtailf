@@ -6,16 +6,28 @@ import (
 	"regexp"
 )
 
-type aclEntry struct {
+type ACLEntry struct {
 	ipnet *net.IPNet
 	allow bool
 }
 
 type ACL struct {
-	acl []aclEntry
+	acl []ACLEntry
 }
 
-func parseACLEntry(v string) (aclEntry, error) {
+func NewACL(acl ...ACLEntry) ACL {
+	return ACL{acl}
+}
+func NewACLEntry(n *net.IPNet, allow bool) ACLEntry {
+	return ACLEntry{n, allow}
+}
+
+func LocalhostAllow() ACLEntry {
+	_, ipnet, _ := net.ParseCIDR("127.0.0.0/8")
+	return ACLEntry{ipnet, true}
+}
+
+func parseACLEntry(v string) (ACLEntry, error) {
 	var allow = true
 	if v[0] == '+' || v[0] == '-' {
 		allow = v[0] == '+'
@@ -23,14 +35,14 @@ func parseACLEntry(v string) (aclEntry, error) {
 	}
 	_, ipnet, err := net.ParseCIDR(v)
 	if err != nil {
-		return aclEntry{}, err
+		return ACLEntry{}, err
 	}
-	return aclEntry{ipnet, allow}, nil
+	return ACLEntry{ipnet, allow}, nil
 }
 
-func ParseACL(s string) ([]aclEntry, error) {
+func ParseACL(s string) ([]ACLEntry, error) {
 	var l = speRegexp.Split(s, -1)
-	var acl []aclEntry
+	var acl []ACLEntry
 	for _, v := range l {
 		if len(v) > 6 {
 			e, err := parseACLEntry(v)
