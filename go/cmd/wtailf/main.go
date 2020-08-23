@@ -18,6 +18,7 @@ import (
 	"github.com/apparentlymart/go-cidr/cidr"
 	"github.com/gobuffalo/packr/v2"
 	"github.com/hpcloud/tail"
+	"github.com/libp2p/go-reuseport"
 	"mxmz.it/wtailf/util"
 )
 
@@ -114,7 +115,7 @@ func main() {
 			go serviceAnnouncer(svcID, svcURL, last)
 		}
 
-		go serviceListener(announceCh)
+		go serviceListener2(announceCh)
 	}
 
 	envACL := os.Getenv("WTAILF_ACL")
@@ -282,6 +283,7 @@ func serviceListener(ch chan<- *Service) {
 	if err != nil {
 		panic(err)
 	}
+
 	list, err := net.ListenUDP("udp4", listenAddr)
 	if err != nil {
 		panic(err)
@@ -304,6 +306,32 @@ func serviceListener(ch chan<- *Service) {
 		message.When = time.Now()
 		ch <- &message
 	}
+}
+
+func serviceListener2(ch chan<- *Service) {
+
+	l1, err := reuseport.ListenPacket("udp4", ":18081")
+	if err != nil {
+		panic(err)
+	}
+	defer l1.Close()
+	for {
+		var message Service
+		inputBytes := make([]byte, 4096)
+		//		log.Printf("Waiting...\n")
+		length, _, _ := l1.ReadFrom(inputBytes)
+		buffer := bytes.NewBuffer(inputBytes[:length])
+		decoder := json.NewDecoder(buffer)
+		err := decoder.Decode(&message)
+		if err != nil {
+			log.Printf("Ignoring malformed message: %s\n", string(inputBytes))
+			continue
+		}
+		//log.Printf("[%v]\n", message)
+		message.When = time.Now()
+		ch <- &message
+	}
+
 }
 
 //func test(c int) {
