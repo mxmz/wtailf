@@ -11,7 +11,7 @@ require (
 	github.com/gobuffalo/packr/v2 v2.8.0
 	github.com/hpcloud/tail v1.0.0
 	github.com/karrick/godirwalk v1.15.6 // indirect
-	github.com/markbates/pkger v0.17.0
+	github.com/onsi/gomega v1.10.1
 	github.com/papertrail/go-tail v0.0.0-20180509224916-973c153b0431
 	github.com/rogpeppe/go-internal v1.6.1 // indirect
 	github.com/sirupsen/logrus v1.6.0 // indirect
