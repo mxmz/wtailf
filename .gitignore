@@ -6,5 +6,5 @@ go/cmd/wtailf/dist
 go/cmd/wtailf/__debug_bin
 go/.temp
 go/cmd/wtailf/wtailf.exe
-go/cmd/wtailf/packrd/packed-packr.go
+go/cmd/wtailf/packrd
 go/cmd/wtailf/main-packr.go
