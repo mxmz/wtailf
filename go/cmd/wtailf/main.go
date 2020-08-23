@@ -69,36 +69,26 @@ type Service struct {
 
 var acl = util.NewACL()
 
-func ifAllowed(w http.ResponseWriter, r *http.Request, f func()) {
-	var host, _, _ = net.SplitHostPort(r.RemoteAddr)
-	var ip = net.ParseIP(host)
-	if acl.IsAllowed(ip) {
-		f()
-	} else {
-		w.WriteHeader(403)
-		w.Write([]byte(ip.String() + " not allowed\n"))
-	}
-}
-
-func authWrap(hndlr func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
+func aclWrap(hndlr func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ifAllowed(w, r, func() {
+		var host, _, _ = net.SplitHostPort(r.RemoteAddr)
+		var ip = net.ParseIP(host)
+		if acl.IsAllowed(ip) {
 			hndlr(w, r)
-		})
+		} else {
+			w.WriteHeader(403)
+			w.Write([]byte(ip.String() + " not allowed\n"))
+		}
+
 	}
 }
-
-type fsAdapted struct {
-	Handler http.Handler
-}
-
-func (h *fsAdapted) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if strings.Index(r.URL.Path, ".") == -1 {
-		r.URL.Path = "/"
+func fixFs(Handler http.Handler) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if strings.Index(r.URL.Path, ".") == -1 {
+			r.URL.Path = "/"
+		}
+		Handler.ServeHTTP(w, r)
 	}
-	ifAllowed(w, r, func() {
-		h.Handler.ServeHTTP(w, r)
-	})
 }
 
 func main() {
@@ -159,9 +149,8 @@ func main() {
 
 	var _ = myIfaces
 
-	http.Handle("/", &fsAdapted{http.FileServer(packr.New("dist", "./dist"))})
-
-	http.HandleFunc("/sources", authWrap(func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/", aclWrap(fixFs(http.FileServer(packr.New("dist", "./dist")))))
+	http.HandleFunc("/sources", aclWrap(func(w http.ResponseWriter, r *http.Request) {
 		var m = getSourceList(sources)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
@@ -169,7 +158,7 @@ func main() {
 		enc.Encode(m)
 	}))
 
-	http.HandleFunc("/peers", authWrap(func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/peers", aclWrap(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		var rv []*Service
 		peersLock.RLock()
@@ -182,7 +171,7 @@ func main() {
 		enc.Encode(rv)
 	}))
 
-	http.HandleFunc("/events", authWrap(func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/events", aclWrap(func(w http.ResponseWriter, r *http.Request) {
 		source := r.URL.Query().Get("source")
 		file := ""
 		var m = getSourceList(sources)
