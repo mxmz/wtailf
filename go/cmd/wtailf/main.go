@@ -24,7 +24,7 @@ import (
 
 //
 
-var filePattern = regexp.MustCompile(`\.log$|\.stderr|\.stdout$`)
+var filePattern = regexp.MustCompile(`\.log$|\.stderr$|\.stdout$`)
 
 func getSourceList(sources []string) []string {
 	var m = []string{}
