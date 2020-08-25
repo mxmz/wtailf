@@ -92,87 +92,34 @@ func fixFs(Handler http.Handler) func(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func main() {
-
-	var bindAddrStr = os.Args[1]
-	var sources = os.Args[2:]
-
-	var bindAddr, _ = net.ResolveTCPAddr("tcp", bindAddrStr)
-	var myIfaces = util.GetNetInterfaceAddresses()
-	var announceCh = make(chan *Service)
-	hostname, _ := os.Hostname()
-
-	var defaultACL = []util.ACLEntry{util.LocalhostAllow()}
-
-	if true {
-		for _, i := range myIfaces {
-			log.Printf("%s\n", i)
-			first, last := cidr.AddressRange(i.Net)
-			defaultACL = append(defaultACL, util.NewACLEntry(i.Net, true))
-			log.Printf("%s %s %s\n", i, first, last)
-			var svcURL = fmt.Sprintf("http://%s:%d", i.IP, bindAddr.Port)
-			var svcID = fmt.Sprintf("%s-%d", hostname, bindAddr.Port)
-			go serviceAnnouncer(svcID, svcURL, last)
-		}
-
-		go serviceListener2(announceCh)
-	}
-
-	envACL := os.Getenv("WTAILF_ACL")
-	if len(envACL) == 0 {
-		acl = util.NewACL(defaultACL...)
-	} else {
-		envACLParsed, err := util.ParseACL(envACL)
-		if err != nil {
-			panic(err)
-		}
-		acl = util.NewACL(envACLParsed...)
-	}
-
-	var peersLock sync.RWMutex
-	var peers = map[string]*Service{}
-
-	go func(ch <-chan *Service) {
-
-		for {
-			select {
-			case message := <-ch:
-				{
-					//					log.Printf("%v\n", message)
-					peersLock.Lock()
-					peers[message.Endpoint] = message
-					peersLock.Unlock()
-				}
-			}
-		}
-
-	}(announceCh)
-
-	var _ = myIfaces
-
-	http.HandleFunc("/", aclWrap(fixFs(http.FileServer(packr.New("dist", "./dist")))))
-	http.HandleFunc("/sources", aclWrap(func(w http.ResponseWriter, r *http.Request) {
+func getSourcesHandler(sources []string) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		var m = getSourceList(sources)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
 		enc := json.NewEncoder(w)
 		enc.Encode(m)
-	}))
+	}
+}
 
-	http.HandleFunc("/peers", aclWrap(func(w http.ResponseWriter, r *http.Request) {
+func getPeersHandler(peers *sync.Map) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		var rv []*Service
-		peersLock.RLock()
-		defer peersLock.RUnlock()
-		for _, s := range peers {
+		peers.Range(func(k interface{}, v interface{}) bool {
+			var s = v.(*Service)
 			rv = append(rv, s)
-		}
+			return true
+		})
+
 		w.WriteHeader(200)
 		enc := json.NewEncoder(w)
 		enc.Encode(rv)
-	}))
+	}
+}
 
-	http.HandleFunc("/events", aclWrap(func(w http.ResponseWriter, r *http.Request) {
+func eventHandler(sources []string) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		source := r.URL.Query().Get("source")
 		file := ""
 		var m = getSourceList(sources)
@@ -242,8 +189,69 @@ func main() {
 
 		}
 		//t.Close()
-	}))
+	}
+}
 
+func main() {
+
+	var bindAddrStr = os.Args[1]
+	var sources = os.Args[2:]
+
+	var bindAddr, _ = net.ResolveTCPAddr("tcp", bindAddrStr)
+	var myIfaces = util.GetNetInterfaceAddresses()
+	var announceCh = make(chan *Service)
+	hostname, _ := os.Hostname()
+
+	var defaultACL = []util.ACLEntry{util.LocalhostAllow()}
+
+	if true {
+		for _, i := range myIfaces {
+			log.Printf("%s\n", i)
+			first, last := cidr.AddressRange(i.Net)
+			defaultACL = append(defaultACL, util.NewACLEntry(i.Net, true))
+			log.Printf("%s %s %s\n", i, first, last)
+			var svcURL = fmt.Sprintf("http://%s:%d", i.IP, bindAddr.Port)
+			var svcID = fmt.Sprintf("%s-%d", hostname, bindAddr.Port)
+			go serviceAnnouncer(svcID, svcURL, last)
+		}
+
+		go serviceListener(announceCh)
+	}
+
+	envACL := os.Getenv("WTAILF_ACL")
+	if len(envACL) == 0 {
+		acl = util.NewACL(defaultACL...)
+	} else {
+		envACLParsed, err := util.ParseACL(envACL)
+		if err != nil {
+			panic(err)
+		}
+		acl = util.NewACL(envACLParsed...)
+	}
+
+	//var peersLock sync.RWMutex
+	//var peers = map[string]*Service{}
+	var peers sync.Map
+
+	go func(ch <-chan *Service) {
+
+		for {
+			select {
+			case message := <-ch:
+				{
+					peers.Store(message.Endpoint, message)
+				}
+			}
+		}
+
+	}(announceCh)
+
+	var _ = myIfaces
+
+	http.HandleFunc("/", aclWrap(fixFs(http.FileServer(packr.New("dist", "./dist")))))
+	http.HandleFunc("/sources", aclWrap(getSourcesHandler(sources)))
+	http.HandleFunc("/peers", aclWrap(getPeersHandler(&peers)))
+	http.HandleFunc("/events", aclWrap(eventHandler(sources)))
 	log.Print("Listening on " + bindAddrStr)
 	log.Fatal(http.ListenAndServe(bindAddrStr, nil))
 }
@@ -279,36 +287,6 @@ func serviceAnnouncer(serviceID string, serviceURL string, broadcast net.IP) {
 }
 
 func serviceListener(ch chan<- *Service) {
-	listenAddr, err := net.ResolveUDPAddr("udp4", ":18081")
-	if err != nil {
-		panic(err)
-	}
-
-	list, err := net.ListenUDP("udp4", listenAddr)
-	if err != nil {
-		panic(err)
-	}
-	defer list.Close()
-
-	for {
-		var message Service
-		inputBytes := make([]byte, 4096)
-		//		log.Printf("Waiting...\n")
-		length, _, _ := list.ReadFromUDP(inputBytes)
-		buffer := bytes.NewBuffer(inputBytes[:length])
-		decoder := json.NewDecoder(buffer)
-		err := decoder.Decode(&message)
-		if err != nil {
-			log.Printf("Ignoring malformed message: %s\n", string(inputBytes))
-			continue
-		}
-		//		log.Printf("[%v]\n", message)
-		message.When = time.Now()
-		ch <- &message
-	}
-}
-
-func serviceListener2(ch chan<- *Service) {
 
 	l1, err := reuseport.ListenPacket("udp4", ":18081")
 	if err != nil {
