@@ -203,6 +203,7 @@ func main() {
 	hostname, _ := os.Hostname()
 
 	var defaultACL = []util.ACLEntry{util.LocalhostAllow()}
+	var envSvcURL = os.Getenv("WTAILF_URL")
 
 	if true {
 		for _, i := range myIfaces {
@@ -211,6 +212,9 @@ func main() {
 			defaultACL = append(defaultACL, util.NewACLEntry(i.Net, true))
 			log.Printf("%s %s %s\n", i, first, last)
 			var svcURL = fmt.Sprintf("http://%s:%d", i.IP, bindAddr.Port)
+			if len(envSvcURL) > 0 {
+				svcURL = envSvcURL
+			}
 			var svcID = fmt.Sprintf("%s-%d", hostname, bindAddr.Port)
 			go serviceAnnouncer(svcID, svcURL, last)
 		}
