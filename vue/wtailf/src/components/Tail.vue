@@ -80,6 +80,12 @@ export default class Tail extends Vue {
         this.list = this.list.splice(0, 1000)
       }
     })
+
+    this.source.onerror = (e: Event) => {
+      setTimeout(() => {
+        window.document.location.reload(true)
+      }, 3000)
+    }
   }
 
   unsubscribe () {

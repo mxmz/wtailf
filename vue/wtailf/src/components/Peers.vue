@@ -62,7 +62,12 @@ export default class Peers extends Vue {
         this.items = data.sort((a, b) => a.hostname.localeCompare(b.hostname))
         console.log(data)
       })
-      .catch((error) => console.error(error))
+      .catch((error) => {
+        console.error(error)
+        setTimeout(() => {
+          window.document.location.reload(true)
+        }, 3000)
+      })
   }
 }
 </script>

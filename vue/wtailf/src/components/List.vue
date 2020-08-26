@@ -45,7 +45,12 @@ export default class List extends Vue {
         this.items = data.sort()
         console.log(data)
       })
-      .catch((error) => console.error(error))
+      .catch((error) => {
+        console.error(error)
+        setTimeout(() => {
+          window.document.location.reload(true)
+        }, 3000)
+      })
   }
 }
 </script>
