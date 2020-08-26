@@ -145,7 +145,7 @@ func eventHandler(sources []string) func(w http.ResponseWriter, r *http.Request)
 		// 	Offset: -firstBlock,
 		// 	Reopen: true,
 		// })
-		t, err := tail.TailFile(file, tail.Config{Follow: true, ReOpen: true, Location: &tail.SeekInfo{Offset: -firstBlock, Whence: os.SEEK_END}})
+		t, err := tail.TailFile(file, tail.Config{Follow: true, ReOpen: true, Location: &tail.SeekInfo{Offset: -firstBlock, Whence: os.SEEK_END}, Poll: true})
 		if err != nil {
 			panic(err)
 		}
