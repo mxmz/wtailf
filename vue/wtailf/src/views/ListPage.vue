@@ -1,6 +1,5 @@
 <template>
   <div class="home">
-    <hr>
     <List /> </div>
 </template>
 

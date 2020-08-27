@@ -1,21 +1,21 @@
 <template>
   <v-app>
-    <v-app-bar app color="primary" class>
+    <v-app-bar dense app color="primary" class hide-on-scroll  light>
       <v-row cols="12">
         <v-col cols="10">
 
-            <v-btn small fab to="/list" :disabled="$route.path === '/list' || $route.path === '/'" title="File list">
+            <v-btn x-small fab to="/list" :disabled="$route.path === '/list' || $route.path === '/'" title="File list">
               <v-icon>mdi-file-multiple-outline</v-icon>
             </v-btn>
 
           <v-divider class="mx-4" vertical inset></v-divider>
 
-            <v-btn small fab to="/peerlist" :disabled="$route.path === '/peerlist'" title="Availble peers">
+            <v-btn x-small fab to="/peerlist" :disabled="$route.path === '/peerlist'" title="Availble peers">
               <v-icon>mdi-lan</v-icon>
             </v-btn>
 
           <v-divider class="mx-4" vertical inset></v-divider>
-          <b style="font-family: monospace">{{title}}</b>
+          <i style="font-family: monospace">{{title}}</i>
 
         </v-col>
 
@@ -49,7 +49,7 @@ export default Vue.extend({
   },
 
   data: () => ({
-    title: document.location.hostname + ' : ' + document.location.port
+    title: document.location.hostname
   })
 })
 </script>
