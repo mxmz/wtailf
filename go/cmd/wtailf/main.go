@@ -70,6 +70,24 @@ type Service struct {
 
 var acl = util.NewACL()
 
+func jwtAuthorizerWrapper(a *util.PubKeyJwtAuthorizer, validate func(d *util.JwtData) bool) func(hndlr func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
+	return func(hndlr func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
+		return func(w http.ResponseWriter, r *http.Request) {
+			var data, err = a.Authorize(r)
+			if err != nil || !validate(data) {
+				w.WriteHeader(403)
+				w.Write([]byte("Invalid JWT or not allowed identity\n"))
+			} else {
+				hndlr(w, r)
+			}
+		}
+	}
+}
+
+func idWrapper(hndlr func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
+	return hndlr
+}
+
 func aclWrap(hndlr func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var host, _, _ = net.SplitHostPort(r.RemoteAddr)
@@ -197,19 +215,46 @@ func main() {
 	var bindAddrStr = os.Args[1]
 	var sources = os.Args[2:]
 
-	var bindAddr, _ = net.ResolveTCPAddr("tcp", bindAddrStr)
-	var myIfaces = util.GetNetInterfaceAddresses()
-	var announceCh = make(chan *Service)
-	hostname, _ := os.Hostname()
+	var authWrap = idWrapper
+	var jwtCertPath = os.Getenv("WTAILF_JWT_CERT_PATH")
+	if len(jwtCertPath) > 0 {
+		var a, err = util.NewAuthorizer(jwtCertPath)
+		if err != nil {
+			panic(err)
+		}
+		var jwtSubMatch = regexp.MustCompile(os.Getenv("WTAILF_JWT_SUB_MATCH"))
+		var jwtIssMatch = regexp.MustCompile(os.Getenv("WTAILF_JWT_ISS_MATCH"))
+
+		authWrap = jwtAuthorizerWrapper(a, func(jwt *util.JwtData) bool {
+			return jwtSubMatch.Match([]byte(jwt.Sub)) && jwtIssMatch.Match([]byte(jwt.Iss))
+		})
+	}
 
 	var defaultACL = []util.ACLEntry{util.LocalhostAllow()}
+	envACL := os.Getenv("WTAILF_ACL")
+	if len(envACL) == 0 {
+		acl = util.NewACL(defaultACL...)
+	} else {
+		envACLParsed, err := util.ParseACL(envACL)
+		if err != nil {
+			panic(err)
+		}
+		acl = util.NewACL(envACLParsed...)
+	}
+
+	var bindAddr, _ = net.ResolveTCPAddr("tcp", bindAddrStr)
+
+	var announceCh = make(chan *Service)
+
+	var myIfaces = util.GetNetInterfaceAddresses()
+	hostname, _ := os.Hostname()
+
 	var envSvcURL = os.Getenv("WTAILF_URL")
 
 	if true {
 		for _, i := range myIfaces {
 			log.Printf("%s\n", i)
 			first, last := cidr.AddressRange(i.Net)
-			defaultACL = append(defaultACL, util.NewACLEntry(i.Net, true))
 			log.Printf("%s %s %s\n", i, first, last)
 			var svcURL = fmt.Sprintf("http://%s:%d", i.IP, bindAddr.Port)
 			if len(envSvcURL) > 0 {
@@ -222,19 +267,6 @@ func main() {
 		go serviceListener(announceCh)
 	}
 
-	envACL := os.Getenv("WTAILF_ACL")
-	if len(envACL) == 0 {
-		acl = util.NewACL(defaultACL...)
-	} else {
-		envACLParsed, err := util.ParseACL(envACL)
-		if err != nil {
-			panic(err)
-		}
-		acl = util.NewACL(envACLParsed...)
-	}
-
-	//var peersLock sync.RWMutex
-	//var peers = map[string]*Service{}
 	var peers sync.Map
 
 	go func(ch <-chan *Service) {
@@ -250,12 +282,10 @@ func main() {
 
 	}(announceCh)
 
-	var _ = myIfaces
-
-	http.HandleFunc("/", aclWrap(fixFs(http.FileServer(packr.New("dist", "./dist")))))
-	http.HandleFunc("/sources", aclWrap(getSourcesHandler(sources)))
-	http.HandleFunc("/peers", aclWrap(getPeersHandler(&peers)))
-	http.HandleFunc("/events", aclWrap(eventHandler(sources)))
+	http.HandleFunc("/", authWrap(aclWrap(fixFs(http.FileServer(packr.New("dist", "./dist"))))))
+	http.HandleFunc("/sources", authWrap(aclWrap(getSourcesHandler(sources))))
+	http.HandleFunc("/peers", authWrap(aclWrap(getPeersHandler(&peers))))
+	http.HandleFunc("/events", authWrap(aclWrap(eventHandler(sources))))
 	log.Print("Listening on " + bindAddrStr)
 	log.Fatal(http.ListenAndServe(bindAddrStr, nil))
 }

@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	github.com/apparentlymart/go-cidr v1.1.0
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/gobuffalo/envy v1.9.0 // indirect
 	github.com/gobuffalo/packd v1.0.0

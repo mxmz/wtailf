@@ -10,7 +10,9 @@
             "request": "launch",
             "mode": "auto",
             "program": "${fileDirname}",
-            "env": {},
+            "env": {
+                "WTAILF_JWT_CERT_PATH": "70e52240-9dc1-4ae6-8b6f-0f76c3e3da1c.crt"
+            },
             "args": [
                 ":8081", "/var/log/", "/var/log/syslog"
             ]

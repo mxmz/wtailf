@@ -8,3 +8,4 @@ go/.temp
 go/cmd/wtailf/wtailf.exe
 go/cmd/wtailf/packrd
 go/cmd/wtailf/main-packr.go
+go/cmd/wtailf/*.crt
