@@ -83,7 +83,7 @@ export default class Tail extends Vue {
 
     this.source.onerror = (e: Event) => {
       setTimeout(() => {
-        window.document.location.reload(true)
+        window.document.location.replace('/?_=' + encodeURIComponent(new Date().toISOString()))
       }, 3000)
     }
   }

@@ -48,7 +48,7 @@ export default class List extends Vue {
       .catch((error) => {
         console.error(error)
         setTimeout(() => {
-          window.document.location.reload(true)
+          window.document.location.replace('/?_=' + encodeURIComponent(new Date().toISOString()))
         }, 3000)
       })
   }
