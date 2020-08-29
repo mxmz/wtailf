@@ -73,13 +73,15 @@ var acl = util.NewACL()
 func jwtAuthorizerWrapper(a *util.PubKeyJwtAuthorizer, validate func(d *util.JwtData) bool) func(hndlr func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
 	return func(hndlr func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
 		return func(w http.ResponseWriter, r *http.Request) {
-			var data, err = a.Authorize(r)
-			if err != nil || !validate(data) {
-				w.WriteHeader(403)
-				w.Write([]byte("Invalid JWT or not allowed identity\n"))
-			} else {
-				hndlr(w, r)
+			if !strings.Contains(r.URL.Path, ".") {
+				var data, err = a.Authorize(r)
+				if err != nil || !validate(data) {
+					w.WriteHeader(403)
+					w.Write([]byte("Invalid JWT or not allowed identity\n"))
+					return
+				}
 			}
+			hndlr(w, r)
 		}
 	}
 }
