@@ -11,15 +11,18 @@
 
              {{a.id}}
           </a>
-          <v-divider class="mx-2" vertical inset></v-divider>
-          <a fab x-small :href='a.endpoint' :target="'_blank'+a.endpoint"><v-icon x-small>mdi-open-in-new</v-icon></a>
+            <v-divider class="mx-2" vertical inset></v-divider>
+            <a fab x-small :href='a.endpoint' :target="'_blank'+a.endpoint"><v-icon x-small>mdi-open-in-new</v-icon></a>
           </v-list-item-title>
-          {{a.hostname}}
+          <div>
+          <v-icon x-small>mdi-{{a.os}}</v-icon>
           <v-divider class="mx-2" vertical inset></v-divider>
-           {{a.endpoint}}
+          {{a.hostname}}
+            <v-divider class="mx-2" vertical inset></v-divider>
+          {{a.endpoint}}
            <v-divider class="mx-2" vertical inset></v-divider>
-           {{a.when | formatDate}}
-
+           <small>last seen on {{a.when | formatDate}}</small>
+          </div>
         </v-list-item-content>
 
       </v-list-item>
@@ -39,6 +42,7 @@ interface Peer {
   endpoint: string;
   hostname: string;
   when: string;
+  os: string;
 }
 
 @Component
@@ -56,7 +60,7 @@ export default class Peers extends Vue {
 
   mounted () {
     console.log('List: mounted')
-    fetch('/peers')
+    fetch('/api/neighbours')
       .then((stream) => stream.json())
       .then((data: Peer[]) => {
         this.items = data.sort((a, b) => a.hostname.localeCompare(b.hostname))

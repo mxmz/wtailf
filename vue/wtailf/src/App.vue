@@ -10,7 +10,7 @@
 
           <v-divider class="mx-4" vertical inset></v-divider>
 
-            <v-btn x-small fab to="/peerlist" :disabled="$route.path === '/peerlist'" title="Availble peers">
+            <v-btn x-small fab to="/neighbours" :disabled="$route.path === '/neighbours'" title="Availble neighbours">
               <v-icon>mdi-lan</v-icon>
             </v-btn>
 

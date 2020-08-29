@@ -39,7 +39,7 @@ export default class List extends Vue {
 
   mounted () {
     console.log('List: mounted')
-    fetch('/sources')
+    fetch('/api/sources')
       .then((stream) => stream.json())
       .then((data: string[]) => {
         this.items = data.sort()

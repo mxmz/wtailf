@@ -64,7 +64,7 @@ export default class Tail extends Vue {
 
   subscribe () {
     this.running++
-    this.source = new EventSource('/events?source=' + encodeURIComponent(this.subject))
+    this.source = new EventSource('/api/events?source=' + encodeURIComponent(this.subject))
     this.source.addEventListener('log', (_event: Event) => {
       const event = _event as MessageEvent
       // console.log(event)

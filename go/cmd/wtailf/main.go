@@ -11,6 +11,7 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -67,6 +68,7 @@ type Service struct {
 	Endpoint string    `json:"endpoint,omitempty"`
 	Hostname string    `json:"hostname,omitempty"`
 	When     time.Time `json:"when,omitempty"`
+	OS       string    `json:"os,omitempty"`
 }
 
 func jwtAuthorizer(a *util.PubKeyJwtAuthorizer, validate func(d *util.JwtData) bool) util.AuthFunc {
@@ -115,13 +117,13 @@ func getSourcesHandler(sources []string) http.HandlerFunc {
 	}
 }
 
-func getPeersHandler(peers *sync.Map) http.HandlerFunc {
+func getNeighboursHandler(neighbours *sync.Map) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		var rv []*Service
 		var ac = r.Context().Value(util.AuthContextKey)
 		var _ = ac
-		peers.Range(func(k interface{}, v interface{}) bool {
+		neighbours.Range(func(k interface{}, v interface{}) bool {
 			var s = v.(*Service)
 			rv = append(rv, s)
 			return true
@@ -263,14 +265,14 @@ func main() {
 			if len(envSvcURL) > 0 {
 				svcURL = envSvcURL
 			}
-			var svcID = fmt.Sprintf("%s-%d", hostname, bindAddr.Port)
+			var svcID = fmt.Sprintf("%s:%d", hostname, bindAddr.Port)
 			go serviceAnnouncer(svcID, svcURL, last)
 		}
 
 		go serviceListener(announceCh)
 	}
 
-	var peers sync.Map
+	var neighbours sync.Map
 
 	go func(ch <-chan *Service) {
 
@@ -278,7 +280,7 @@ func main() {
 			select {
 			case message := <-ch:
 				{
-					peers.Store(message.Endpoint, message)
+					neighbours.Store(message.Endpoint, message)
 				}
 			}
 		}
@@ -288,9 +290,9 @@ func main() {
 	var authWrap = util.AuthorizedHandlerBuilder(authorizer)
 
 	http.HandleFunc("/", authWrap(fixFs(http.FileServer(packr.New("dist", "./dist")))))
-	http.HandleFunc("/sources", authWrap(getSourcesHandler(sources)))
-	http.HandleFunc("/peers", authWrap(getPeersHandler(&peers)))
-	http.HandleFunc("/events", authWrap(eventHandler(sources)))
+	http.HandleFunc("/api/sources", authWrap(getSourcesHandler(sources)))
+	http.HandleFunc("/api/neighbours", authWrap(getNeighboursHandler(&neighbours)))
+	http.HandleFunc("/api/events", authWrap(eventHandler(sources)))
 	log.Print("Listening on " + bindAddrStr)
 	log.Fatal(http.ListenAndServe(bindAddrStr, nil))
 }
@@ -310,7 +312,8 @@ func serviceAnnouncer(serviceID string, serviceURL string, broadcast net.IP) {
 	}
 	defer connection.Close()
 	hostname, _ := os.Hostname()
-	svc := Service{Endpoint: serviceURL, ID: serviceID, Hostname: hostname, When: time.Now()}
+	osname := runtime.GOOS
+	svc := Service{Endpoint: serviceURL, ID: serviceID, Hostname: hostname, When: time.Now(), OS: osname}
 	var buffer bytes.Buffer
 	encoder := json.NewEncoder(&buffer)
 	encoder.Encode(svc)
