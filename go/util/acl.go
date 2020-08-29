@@ -15,8 +15,8 @@ type ACL struct {
 	acl []ACLEntry
 }
 
-func NewACL(acl ...ACLEntry) ACL {
-	return ACL{acl}
+func NewACL(acl ...ACLEntry) *ACL {
+	return &ACL{acl}
 }
 func NewACLEntry(n *net.IPNet, allow bool) ACLEntry {
 	return ACLEntry{n, allow}

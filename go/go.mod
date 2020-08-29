@@ -15,6 +15,7 @@ require (
 	github.com/libp2p/go-reuseport v0.0.2
 	github.com/onsi/gomega v1.10.1
 	github.com/papertrail/go-tail v0.0.0-20180509224916-973c153b0431
+	github.com/pkg/errors v0.9.1
 	github.com/rogpeppe/go-internal v1.6.1 // indirect
 	github.com/sirupsen/logrus v1.6.0 // indirect
 	github.com/spf13/cobra v1.0.0 // indirect

@@ -54,7 +54,7 @@ func (v *PubKeyJwtAuthorizer) decode(token string) (*JwtData, error) {
 	return &rv, nil
 }
 
-func NewAuthorizer(pubKeyPath string) (*PubKeyJwtAuthorizer, error) {
+func NewPubKeyJwtAuthorizer(pubKeyPath string) (*PubKeyJwtAuthorizer, error) {
 	verifyBytes, err := ioutil.ReadFile(pubKeyPath)
 	if err != nil {
 		return nil, err

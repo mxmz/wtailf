@@ -19,6 +19,7 @@ import (
 	"github.com/gobuffalo/packr/v2"
 	"github.com/hpcloud/tail"
 	"github.com/libp2p/go-reuseport"
+	"github.com/pkg/errors"
 	"mxmz.it/wtailf/util"
 )
 
@@ -68,51 +69,43 @@ type Service struct {
 	When     time.Time `json:"when,omitempty"`
 }
 
-var acl = util.NewACL()
-
-func jwtAuthorizerWrapper(a *util.PubKeyJwtAuthorizer, validate func(d *util.JwtData) bool) func(hndlr func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
-	return func(hndlr func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
-		return func(w http.ResponseWriter, r *http.Request) {
-			if !strings.Contains(r.URL.Path, ".") {
-				var data, err = a.Authorize(r)
-				if err != nil || !validate(data) {
-					w.WriteHeader(403)
-					w.Write([]byte("Invalid JWT or not allowed identity\n"))
-					return
-				}
+func jwtAuthorizer(a *util.PubKeyJwtAuthorizer, validate func(d *util.JwtData) bool) util.AuthFunc {
+	return func(c util.AuthContext, r *http.Request) (util.AuthContext, error) {
+		if !strings.Contains(r.URL.Path, ".") {
+			var data, err = a.Authorize(r)
+			if err != nil || !validate(data) {
+				return nil, errors.New("Invalid JWT or identity not authorized")
+			} else {
+				c["sub"] = data.Sub
+				c["iss"] = data.Iss
 			}
-			hndlr(w, r)
 		}
+		return c, nil
 	}
 }
 
-func idWrapper(hndlr func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
-	return hndlr
-}
-
-func aclWrap(hndlr func(w http.ResponseWriter, r *http.Request)) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
+func aclAuthorizer(acl *util.ACL) util.AuthFunc {
+	return func(c util.AuthContext, r *http.Request) (util.AuthContext, error) {
 		var host, _, _ = net.SplitHostPort(r.RemoteAddr)
 		var ip = net.ParseIP(host)
 		if acl.IsAllowed(ip) {
-			hndlr(w, r)
+			c["ip"] = ip.String()
+			return c, nil
 		} else {
-			w.WriteHeader(403)
-			w.Write([]byte(ip.String() + " not allowed\n"))
+			return nil, errors.New(ip.String() + " not allowed\n")
 		}
-
 	}
 }
-func fixFs(Handler http.Handler) func(w http.ResponseWriter, r *http.Request) {
+func fixFs(hndlr http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if strings.Index(r.URL.Path, ".") == -1 {
 			r.URL.Path = "/"
 		}
-		Handler.ServeHTTP(w, r)
+		hndlr.ServeHTTP(w, r)
 	}
 }
 
-func getSourcesHandler(sources []string) func(w http.ResponseWriter, r *http.Request) {
+func getSourcesHandler(sources []string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var m = getSourceList(sources)
 		w.Header().Set("Content-Type", "application/json")
@@ -122,10 +115,12 @@ func getSourcesHandler(sources []string) func(w http.ResponseWriter, r *http.Req
 	}
 }
 
-func getPeersHandler(peers *sync.Map) func(w http.ResponseWriter, r *http.Request) {
+func getPeersHandler(peers *sync.Map) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		var rv []*Service
+		var ac = r.Context().Value(util.AuthContextKey)
+		var _ = ac
 		peers.Range(func(k interface{}, v interface{}) bool {
 			var s = v.(*Service)
 			rv = append(rv, s)
@@ -138,7 +133,7 @@ func getPeersHandler(peers *sync.Map) func(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func eventHandler(sources []string) func(w http.ResponseWriter, r *http.Request) {
+func eventHandler(sources []string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		source := r.URL.Query().Get("source")
 		file := ""
@@ -216,32 +211,38 @@ func main() {
 
 	var bindAddrStr = os.Args[1]
 	var sources = os.Args[2:]
+	var authorizer = util.NullAuthorizer
 
-	var authWrap = idWrapper
+	var defaultACL = []util.ACLEntry{util.LocalhostAllow()}
+	var envACL = os.Getenv("WTAILF_ACL")
+	if len(envACL) == 0 {
+		authorizer = util.ComposeAuthorizers(authorizer,
+			aclAuthorizer(util.NewACL(defaultACL...)),
+		)
+	} else {
+		envACLParsed, err := util.ParseACL(envACL)
+		if err != nil {
+			panic(err)
+		}
+		authorizer = util.ComposeAuthorizers(authorizer,
+			aclAuthorizer(util.NewACL(envACLParsed...)),
+		)
+	}
+
 	var jwtCertPath = os.Getenv("WTAILF_JWT_CERT_PATH")
 	if len(jwtCertPath) > 0 {
-		var a, err = util.NewAuthorizer(jwtCertPath)
+		var a, err = util.NewPubKeyJwtAuthorizer(jwtCertPath)
 		if err != nil {
 			panic(err)
 		}
 		var jwtSubMatch = regexp.MustCompile(os.Getenv("WTAILF_JWT_SUB_MATCH"))
 		var jwtIssMatch = regexp.MustCompile(os.Getenv("WTAILF_JWT_ISS_MATCH"))
 
-		authWrap = jwtAuthorizerWrapper(a, func(jwt *util.JwtData) bool {
-			return jwtSubMatch.Match([]byte(jwt.Sub)) && jwtIssMatch.Match([]byte(jwt.Iss))
-		})
-	}
-
-	var defaultACL = []util.ACLEntry{util.LocalhostAllow()}
-	envACL := os.Getenv("WTAILF_ACL")
-	if len(envACL) == 0 {
-		acl = util.NewACL(defaultACL...)
-	} else {
-		envACLParsed, err := util.ParseACL(envACL)
-		if err != nil {
-			panic(err)
-		}
-		acl = util.NewACL(envACLParsed...)
+		authorizer = util.ComposeAuthorizers(authorizer,
+			jwtAuthorizer(a, func(jwt *util.JwtData) bool {
+				return jwtSubMatch.Match([]byte(jwt.Sub)) && jwtIssMatch.Match([]byte(jwt.Iss))
+			}),
+		)
 	}
 
 	var bindAddr, _ = net.ResolveTCPAddr("tcp", bindAddrStr)
@@ -284,10 +285,12 @@ func main() {
 
 	}(announceCh)
 
-	http.HandleFunc("/", authWrap(aclWrap(fixFs(http.FileServer(packr.New("dist", "./dist"))))))
-	http.HandleFunc("/sources", authWrap(aclWrap(getSourcesHandler(sources))))
-	http.HandleFunc("/peers", authWrap(aclWrap(getPeersHandler(&peers))))
-	http.HandleFunc("/events", authWrap(aclWrap(eventHandler(sources))))
+	var authWrap = util.AuthorizedHandlerBuilder(authorizer)
+
+	http.HandleFunc("/", authWrap(fixFs(http.FileServer(packr.New("dist", "./dist")))))
+	http.HandleFunc("/sources", authWrap(getSourcesHandler(sources)))
+	http.HandleFunc("/peers", authWrap(getPeersHandler(&peers)))
+	http.HandleFunc("/events", authWrap(eventHandler(sources)))
 	log.Print("Listening on " + bindAddrStr)
 	log.Fatal(http.ListenAndServe(bindAddrStr, nil))
 }
