@@ -70,6 +70,7 @@ export default class Tail extends Vue {
       // console.log(event)
       if (this.idx === 0) {
         this.running--
+        console.log(event)
       }
       this.idx++
       this.list.unshift({
@@ -82,9 +83,12 @@ export default class Tail extends Vue {
     })
 
     this.source.onerror = (e: Event) => {
-      setTimeout(() => {
-        window.document.location.replace('/?_=' + encodeURIComponent(new Date().toISOString()))
-      }, 3000)
+      console.log(e)
+      if (this.idx === 0) {
+        setTimeout(() => {
+          window.document.location.reload(true)
+        }, 3000)
+      }
     }
   }
 
