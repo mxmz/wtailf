@@ -304,28 +304,43 @@ func serviceAnnouncer(serviceID string, serviceURL string, broadcast net.IP) {
 	// }
 	//list, err := net.ListenUDP("udp4", listenAddr)
 	addr := &net.UDPAddr{broadcast, 18081, ""}
-	connection, err := net.DialUDP("udp", nil, addr)
+	// connection, err := net.DialUDP("udp", nil, addr)
 
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer connection.Close()
+	// if err != nil {
+	// 	log.Println(err)
+	// 	return
+	// }
+	// defer connection.Close()
 	hostname, _ := os.Hostname()
 	osname := runtime.GOOS
 	svc := Service{Endpoint: serviceURL, ID: serviceID, Hostname: hostname, When: time.Now(), OS: osname}
-	var buffer bytes.Buffer
-	encoder := json.NewEncoder(&buffer)
-	encoder.Encode(svc)
 	for {
 		delay := 10 * time.Second
-		_, err := connection.Write(buffer.Bytes())
+		err := announceService(addr, &svc)
 		if err != nil {
 			log.Println(err)
 			delay = 60 * time.Second
 		}
 		time.Sleep(delay)
 	}
+}
+
+func announceService(addr *net.UDPAddr, s *Service) error {
+	c, err := net.DialUDP("udp", nil, addr)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer c.Close()
+
+	var buffer bytes.Buffer
+	encoder := json.NewEncoder(&buffer)
+	encoder.Encode(s)
+	_, err = c.Write(buffer.Bytes())
+	if err != nil {
+		log.Println(err)
+	}
+	return err
 }
 
 func serviceListener(ch chan<- *Service) {
@@ -339,10 +354,17 @@ func serviceListener(ch chan<- *Service) {
 		var message Service
 		inputBytes := make([]byte, 4096)
 		//		log.Printf("Waiting...\n")
-		length, _, _ := l1.ReadFrom(inputBytes)
+		length, a, err := l1.ReadFrom(inputBytes)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+
+		var _ = a
+
 		buffer := bytes.NewBuffer(inputBytes[:length])
 		decoder := json.NewDecoder(buffer)
-		err := decoder.Decode(&message)
+		err = decoder.Decode(&message)
 		if err != nil {
 			log.Printf("Ignoring malformed message: %s\n", string(inputBytes))
 			continue
