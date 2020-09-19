@@ -98,6 +98,7 @@ func aclAuthorizer(acl *util.ACL) util.AuthFunc {
 		}
 	}
 }
+
 func fixFs(hndlr http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if strings.Index(r.URL.Path, ".") == -1 {
@@ -265,8 +266,8 @@ func main() {
 			if len(envSvcURL) > 0 {
 				svcURL = envSvcURL
 			}
-			var svcID = fmt.Sprintf("%s:%d", hostname, bindAddr.Port)
-			go serviceAnnouncer(svcID, svcURL, last)
+			var svcID = strings.Replace(fmt.Sprintf("%s_%d", hostname, bindAddr.Port), ".", "_", -1)
+			go serviceAnnouncer(svcID, svcURL, bindAddr.IP)
 		}
 
 		go serviceListener(announceCh)
@@ -297,26 +298,14 @@ func main() {
 	log.Fatal(http.ListenAndServe(bindAddrStr, nil))
 }
 
-func serviceAnnouncer(serviceID string, serviceURL string, broadcast net.IP) {
-	// listenAddr, err := net.ResolveUDPAddr("udp4", ":18081")
-	// if err != nil {
-	// 	panic(err)
-	// }
-	//list, err := net.ListenUDP("udp4", listenAddr)
-	addr := &net.UDPAddr{broadcast, 18081, ""}
-	// connection, err := net.DialUDP("udp", nil, addr)
-
-	// if err != nil {
-	// 	log.Println(err)
-	// 	return
-	// }
-	// defer connection.Close()
+func serviceAnnouncer(serviceID string, serviceURL string, localip net.IP) {
+	laddr := &net.UDPAddr{localip, 0, ""}
 	hostname, _ := os.Hostname()
 	osname := runtime.GOOS
 	svc := Service{Endpoint: serviceURL, ID: serviceID, Hostname: hostname, When: time.Now(), OS: osname}
 	for {
 		delay := 10 * time.Second
-		err := announceService(addr, &svc)
+		err := broadcastServiceAnnounce(laddr, &svc)
 		if err != nil {
 			log.Println(err)
 			delay = 60 * time.Second
@@ -325,8 +314,13 @@ func serviceAnnouncer(serviceID string, serviceURL string, broadcast net.IP) {
 	}
 }
 
-func announceService(addr *net.UDPAddr, s *Service) error {
-	c, err := net.DialUDP("udp", nil, addr)
+func broadcastServiceAnnounce(laddr *net.UDPAddr, s *Service) error {
+	addr, err := net.ResolveUDPAddr("udp", "255.255.255.255:18081")
+	if err != nil {
+		return err
+	}
+
+	c, err := net.DialUDP("udp", laddr, addr)
 	if err != nil {
 		log.Println(err)
 		return err
